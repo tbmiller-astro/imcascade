@@ -1,11 +1,12 @@
-import numpy
+import numpy as np
 from scipy.special import erf
 from scipy.ndimage import rotate
 
 class MultiGaussModel():
     """A class used to generate models based on sums of series of Gaussians """
 
-    def __init__(self, shape, sig, psf_sig, psf_a, verbose = True, sky_model = True, render_mode = 'erf'):
+    def __init__(self, shape, sig, psf_sig, psf_a, verbose = True, \
+      sky_model = True, render_mode = 'erf', log_weight_scale = True):
         """ Initialize a MultiGaussModel instance
         Paramaters
         ----------
@@ -29,6 +30,8 @@ class MultiGaussModel():
             provides a reasonble estimate of the average flux in that pixel. 'gauss'
             is faster but far less accurate for objects with size O(pixel size),
             so use with caution.
+        log_weight_scale: bool, optional
+            Wether to treat weights as log scale, Default True
 """
         if psf_sig is not None or psf_a is not None:
             self.psf_sig = psf_sig
@@ -40,6 +43,7 @@ class MultiGaussModel():
             self.has_psf = False
 
         self.render_mode = render_mode
+        self.log_weight_scale = log_weight_scale
 
         if not render_mode in ['gauss', 'erf']:
             if verbose: print("Incompatible render mode, must choose 'gauss' or 'erf'! Setting to 'erf'")
@@ -189,48 +193,10 @@ class MultiGaussModel():
         phi = param[3]
 
 
-        a_in = param[4:4+self.Ndof_gauss]
-
-        if not self.has_psf:
-            final_var = np.copy(self.var)
-            final_q = q_in
-            final_a = a_in
+        if self.log_weight_scale:
+            a_in = 10**param[4:4+self.Ndof_gauss]
         else:
-            final_var = (self.var + self.psf_var[:,None]).ravel()
-            final_q = np.sqrt( (self.var*q_in*q_in+ self.psf_var[:,None]).ravel() / (final_var) )
-            final_a = (a_in*self.psf_a[:,None]).ravel()
-
-
-        if self.render_mode == 'gauss':
-            Xp,Yp = self.get_prime_coord( (x0, y0, phi) )
-            model_im = self.get_gauss_stack(Xp,Yp, final_q, final_a, final_var)
-
-        if self.render_mode == 'erf':
-            model_im = self.get_erf_stack(x0, y0, phi,final_q, final_a, final_var)
-
-        if not self.sky_model:
-            return model_im
-        else:
-            return model_im + self.get_sky_model(param[-self.Ndof_sky:])
-
-    def make_model_log(self,param):
-        """ Function to generate model image based on given paramters array.
-        This version assumaes the gaussian weights are given in log scale
-        Paramaters
-        ----------
-        param: array
-            1-D array containing all the Parameters
-        Returns
-        -------
-        model_image: Array
-            Generated model image
-"""
-        x0= param[0]
-        y0 = param[1]
-        phi = param[3]
-
-        q_in = param[2]
-        a_in = 10**param[4:4+self.Ndof_gauss]
+            a_in = param[4:4+self.Ndof_gauss]
 
         if not self.has_psf:
             final_var = np.copy(self.var)

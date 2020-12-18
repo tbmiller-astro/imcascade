@@ -4,7 +4,7 @@ from astropy import units as u
 import types
 from scipy.optimize import least_squares
 import sep
-from mgm import MultiGaussModel
+from figpy.mgm import MultiGaussModel
 
 import dynesty
 from scipy.stats import norm, truncnorm
@@ -12,37 +12,39 @@ from dynesty import utils as dyfunc
 import emcee
 
 class Task(MultiGaussModel):
-    """A Class used to initialize and fit images with MultiGaussModel"""
-    def __init__(self, img, sig, psf_sig, psf_a, weight = None, verbose = True, sky_model = True,render_mode = 'erf'):
-    """Initialize a Task instance
-    Paramaters
-    ----------
-    img: Array
-        Data to be fit, it is assumed to be a cutout with the object of interest
-        in the center of the image
-    sig: Array
-        Widths of Gaussians to be used in MultiGaussModel
-    psf_sig: array, None
-        Width of Gaussians used to approximate psf
-    psf_a: array, None
-        Weights of Gaussians used to approximate psf
-        If both psf_sig and psf_a are None then will run in Non-psf mode
-    weight: Array, optional
-        Array of pixel by pixel weights to be used in fitting. If None will assume
-        all the weights are equal and set to 1.
-    verbose: bool, optional
-        If true will log and print out errors
-    sky_model: bool, optional
-        If True will incorperate a tilted plane sky model. Reccomended to be set
-        to True
-    render_mode: 'gauss' or 'erf'
-        Option to decide how to render models. Default is 'erf' as it computes
-        the integral over the pixel of each profile therefore is more accurate
-        but more computationally intensive. 'gauss' assumes the center of a pixel
-        provides a reasonble estimate of the average flux in that pixel. 'gauss'
-        is faster but far less accurate for objects which vary on O(pixel size),
-        so use with caution.
-
+    """A Class used fit images with MultiGaussModel"""
+    def __init__(self, img, sig, psf_sig, psf_a, weight = None, verbose = True, \
+      sky_model = True,render_mode = 'erf', log_weight_scale = True):
+        """Initialize a Task instance
+        Paramaters
+        ----------
+        img: 2D Array
+            Data to be fit, it is assumed to be a cutout with the object of interest
+            in the center of the image
+        sig: 1D Array
+            Widths of Gaussians to be used in MultiGaussModel
+        psf_sig: 1D array, None
+            Width of Gaussians used to approximate psf
+        psf_a: 1D array, None
+            Weights of Gaussians used to approximate psf
+            If both psf_sig and psf_a are None then will run in Non-psf mode
+        weight: 2D Array, optional
+            Array of pixel by pixel weights to be used in fitting. Should be same shape
+            as 'img' If None will assume all the weights are equal and set to 1.
+        verbose: bool, optional
+            If true will log and print out errors
+        sky_model: bool, optional
+            If True will incorperate a tilted plane sky model. Reccomended to be set
+            to True
+        render_mode: 'gauss' or 'erf'
+            Option to decide how to render models. Default is 'erf' as it computes
+            the integral over the pixel of each profile therefore is more accurate
+            but more computationally intensive. 'gauss' assumes the center of a pixel
+            provides a reasonble estimate of the average flux in that pixel. 'gauss'
+            is faster but far less accurate for objects which vary on O(pixel size),
+            so use with caution.
+        log_weight_scale: bool, optional
+            Wether to treat weights as log scale, Default True
 """
         self.img  = img
         self.verbose = verbose
@@ -58,7 +60,9 @@ class Task(MultiGaussModel):
         self.sum_weight = np.sum(self.weight)
         self.avg_noise = np.mean(1./np.sqrt(self.weight))
 
-        MultiGaussModel.__init__(self,self.img.shape,sig, psf_sig, psf_a, verbose = verbose, sky_model = sky_model, render_mode = render_mode)
+        MultiGaussModel.__init__(self,self.img.shape,sig, psf_sig, psf_a, \
+          verbose = verbose, sky_model = sky_model, render_mode = render_mode, \
+          log_weight_scale = log_weight_scale)
 
         bounds_dict = {}
         init_dict = {}
@@ -102,9 +106,18 @@ class Task(MultiGaussModel):
         #Below assumes all gaussian have same A
         a_norm = np.ones(self.Ndof_gauss)*self.A_guess/self.Ndof_gauss
 
+        #If using log scale then adjust initial guesses
+        if self.log_weight_scale:
+            self.A_guess = np.log10(self.A_guess)
+            a_norm = np.log10(a_norm)
+            #set minimum possible weight value
+            a_min = -9
+        else:
+            a_min = 0
+
         for i in range(self.Ndof_gauss):
             init_dict['a%i'%i] = a_norm[i]
-            bounds_dict['a%i'%i] = [0, self.A_guess]
+            bounds_dict['a%i'%i] = [a_min, self.A_guess]
 
         #Add option to specificy your own initial conditions and boudns
         self.lb = [bounds_dict['x0'][0], bounds_dict['y0'][0], bounds_dict['q'][0], bounds_dict['phi'][0]]
@@ -224,14 +237,13 @@ class Task(MultiGaussModel):
         return gauss_arr
 
     def chi_sq(self,params):
-        model = self.make_model_log(params)
+        model = self.make_model(params)
         return np.sum( (self.img - model)**2 *self.weight)
 
     def log_like(self,params):
         return -0.5*self.chi_sq(params)
 
     def ptform(self, u):
-        #for log
         x = np.zeros(len(u))
         x[0] = norm.ppf(u[0], loc = self.param_init[0], scale = 1)
         x[1] = norm.ppf(u[1], loc = self.param_init[1], scale = 1)
@@ -242,21 +254,20 @@ class Task(MultiGaussModel):
         low_n, high_n = (low - m) / s, (high - m) / s  # standardize
         x[2] = truncnorm.ppf(u[2], low_n, high_n, loc=m, scale=s)
 
-        #phi
+        #Uniform between 0 and pi for phi
         x[3] = u[3]*np.pi
 
-        #log-uniform for a_i
-        x[4:-self.Ndof_sky] = u[4:-self.Ndof_sky]*(np.log10(self.ub[4:-self.Ndof_sky]) - -6) + -6
-
-        #Uniform for sky
-        x[-self.Ndof_sky:] = u[-self.Ndof_sky:]*(self.ub[-self.Ndof_sky:] - self.lb[-self.Ndof_sky:]) + self.lb[-self.Ndof_sky:]
+        #Uniform for gaussian weights and sky
+        x[4:] = u[4:]*(self.ub[4:] - self.lb[4:]) + self.lb[4:]
 
         return x
 
     def log_like_exp(self,exp_params):
-        #final_a = (10**exp_params[:-self.Ndof_sky]*self.psf_a[:,None]).ravel()
-        final_a = 10**exp_params[:-self.Ndof_sky]
+        final_a = xp_params[:-self.Ndof_sky]
+
+        if self.log_weight_scale: final_a = 10**final_a
         model = np.sum(final_a*self.express_gauss_arr, axis = -1)
+
         if self.sky_model:
             model += self.get_sky_model(exp_params[-self.Ndof_sky:])
 
@@ -264,10 +275,19 @@ class Task(MultiGaussModel):
 
     def ptform_exp(self, u):
         x = np.zeros(len(u))
-        x[-self.Ndof_sky:] = u[-self.Ndof_sky:]*(self.ub[-self.Ndof_sky:] - self.lb[-self.Ndof_sky:]) + self.lb[-self.Ndof_sky:]
-        x[:-self.Ndof_sky] = u[:-self.Ndof_sky]*(np.log10(self.ub[4:-self.Ndof_sky]) - -6) + -6
-        #x[:-self.Ndof_sky] = norm.ppf(u[:-self.Ndof_sky],scale = 2)*np.log10(self.min_res.x[4:-self.Ndof_sky])
+        x = u*(self.ub[4:] - self.lb[4:]) + self.lb[4:]
         return x
+
+    def log_prior_express(self,params):
+        inside_prior = (params > self.lb[4:])*(params < self.ub[4:])
+        if inside_prior.all():
+            return 0
+        else:
+            return -np.inf
+
+    def log_prob_express(self,params):
+        logp = self.log_prior_express(params)
+        return self.log_like_exp(params) + logp
 
 
     def run_dynesty(self,method = 'full', dynesty_kwargs = {}):
@@ -287,27 +307,6 @@ class Task(MultiGaussModel):
         post_samp = dyfunc.resample_equal(dyn_samples, dyn_weights)
         return post_samp
 
-
-    def log_prior_express(self,params):
-        sig_bool = (params[:-self.Ndof_sky] > -9)*(params[:-self.Ndof_sky] < np.log10(self.ub[4:-self.Ndof_sky]))
-        sky_bool = (params[-self.Ndof_sky:] > self.lb[-self.Ndof_sky:])*(params[-self.Ndof_sky:] < self.ub[-self.Ndof_sky:])
-        if sky_bool.all() and sig_bool.all():
-            return 0
-        else:
-            return -np.inf
-
-    def log_like_express(self, exp_params):
-        #final_a = (exp_params[:-self.Ndof_sky]*self.psf_a[:,None]).ravel()
-        final_a = 10**exp_params[:-self.Ndof_sky]
-        model = np.sum(final_a*self.express_gauss_arr, axis = -1)
-        if self.sky_model:
-            model += self.get_sky_model(exp_params[-self.Ndof_sky:])
-
-        return -0.5*np.sum( (self.img - model)**2 *self.weight)
-
-    def log_prob_express(self,params):
-        logp = self.log_prior_express(params)
-        return self.log_like_express(params) + logp
 
     def run_emcee(self,method = 'express', nwalkers = 32, max_it = int(1e6), check_freq = int(500), print_progress = False):
 
