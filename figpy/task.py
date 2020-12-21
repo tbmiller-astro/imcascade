@@ -1,7 +1,4 @@
 import numpy as np
-from scipy.optimize import minimize
-from astropy import units as u
-import types
 from scipy.optimize import least_squares
 import sep
 from figpy.mgm import MultiGaussModel
@@ -13,8 +10,8 @@ import emcee
 
 class Task(MultiGaussModel):
     """A Class used fit images with MultiGaussModel"""
-    def __init__(self, img, sig, psf_sig, psf_a, weight = None, verbose = True, \
-      sky_model = True,render_mode = 'erf', log_weight_scale = True):
+    def __init__(self, img, sig, psf_sig, psf_a, weight = None, mask = None,\
+      sky_model = True,render_mode = 'erf', log_weight_scale = True, verbose = True):
         """Initialize a Task instance
         Paramaters
         ----------
@@ -29,10 +26,13 @@ class Task(MultiGaussModel):
             Weights of Gaussians used to approximate psf
             If both psf_sig and psf_a are None then will run in Non-psf mode
         weight: 2D Array, optional
-            Array of pixel by pixel weights to be used in fitting. Should be same shape
-            as 'img' If None will assume all the weights are equal and set to 1.
-        verbose: bool, optional
-            If true will log and print out errors
+            Array of pixel by pixel weights to be used in fitting. Must be same
+            shape as 'img' If None, all the weights will be set to 1.
+        mask: 2D Array, optional
+            Array with the same shape as 'img' denoting which, if any, pixels
+            to mask  during fitting process. Values of '1' or 'True' values for
+            the pixels to be masked. If set to 'None' then will not mask any
+            pixels.In practice, the weights of masked pixels is set to '0'.
         sky_model: bool, optional
             If True will incorperate a tilted plane sky model. Reccomended to be set
             to True
@@ -45,20 +45,31 @@ class Task(MultiGaussModel):
             so use with caution.
         log_weight_scale: bool, optional
             Wether to treat weights as log scale, Default True
+        verbose: bool, optional
+            If true will log and print out errors
 """
         self.img  = img
         self.verbose = verbose
+
         if weight is None:
             self.weight = np.ones(self.img.shape)
         else:
             self.weight = weight
 
         if self.weight.shape != self.img.shape:
-            raise ValueError('img and weight arrays must have same shape')
+            raise ValueError("'weight' array must have same shape as 'img'")
 
-        self.mean_weight = np.mean(self.weight)
-        self.sum_weight = np.sum(self.weight)
-        self.avg_noise = np.mean(1./np.sqrt(self.weight))
+        if mask is not None:
+            if self.weight.shape != self.img.shape:
+                raise ValueError("'mask' array must have same shape as 'img' ")
+            self.weight[mask] = 0
+            self.mask = mask
+        else:
+            self.mask = np.zeros(self.img.shape)
+
+        self.mean_weight = np.mean(self.weight[self.weight>0])
+        self.sum_weight = np.sum(self.weight[self.weight>0])
+        self.avg_noise = np.mean(1./np.sqrt(self.weight[self.weight>0]))
 
         MultiGaussModel.__init__(self,self.img.shape,sig, psf_sig, psf_a, \
           verbose = verbose, sky_model = sky_model, render_mode = render_mode, \
@@ -85,9 +96,9 @@ class Task(MultiGaussModel):
             obj_init,seg_init = sep.extract(img - bkg_init.back(), 5, err = bkg_init.rms(), segmentation_map=True)
 
             seg_init[seg_init>1] = 1
-            mask = np.copy(seg_init)
+            sep_mask = np.copy(seg_init)
 
-            bkg = sep.Background(img,mask = mask,  maskthresh=0.,bw = 16, bh = 16)
+            bkg = sep.Background(img,mask = sep_mask,  maskthresh=0.,bw = 16, bh = 16)
             obj,seg = sep.extract(img - bkg.back(), 5, err = bkg.rms(), segmentation_map=True)
             init_dict['sky0'] = bkg.globalback
             bounds_dict['sky0'] = [-25,25]
@@ -119,7 +130,7 @@ class Task(MultiGaussModel):
             init_dict['a%i'%i] = a_norm[i]
             bounds_dict['a%i'%i] = [a_min, self.A_guess]
 
-        #Add option to specificy your own initial conditions and boudns
+        #Add option to specificy your own initial conditions and bounds
         self.lb = [bounds_dict['x0'][0], bounds_dict['y0'][0], bounds_dict['q'][0], bounds_dict['phi'][0]]
         self.ub = [bounds_dict['x0'][1], bounds_dict['y0'][1], bounds_dict['q'][1], bounds_dict['phi'][1]]
 
