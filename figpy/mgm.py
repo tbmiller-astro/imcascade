@@ -10,15 +10,16 @@ class MultiGaussModel():
         """ Initialize a MultiGaussModel instance
         Paramaters
         ----------
-        shape: 2x 1 array like
+        shape: 2x1 array_like
             Size of model image to generate
-        sig: array
+        sig: 1-D array
             Widths of Gaussians used to genrate model
-        psf_sig: array, None
+        psf_sig: 1-D array, None
             Width of Gaussians used to approximate psf
-        psf_a: array, None
-            Weights of Gaussians used to approximate psf
-            If both psf_sig and psf_a are None then will run in Non-psf mode
+        psf_a: 1-D array, None
+            Weights of Gaussians used to approximate psf, must be same length
+            as 'psf_sig'. If both psf_sig and psf_a are None then will run in
+            Non-psf mode
         verbose: bool, optional
             If true will print out errors
         sky_model: bool, optional
