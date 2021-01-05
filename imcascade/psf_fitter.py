@@ -1,6 +1,6 @@
 
-from figpy.task import Task
-from figpy.utils import min_diff_array
+from imcascade.Fitter import Fitter
+from imcascade.utils import min_diff_array
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
@@ -143,7 +143,7 @@ class PSFFitter():
         return a_fit, sig_fit, np.sum((ls_res_cur.fun)**2)
 
     def auto_fit(self, N_max = 5, frac_cutoff = 1e-4,norm_a = True, show_fig = True):
-    """ Function used for automatic fitting of PSF. First using a 1-D fit to find
+        """ Function used for automatic fitting of PSF. First using a 1-D fit to find
     the smallest acceptable number of Gaussians and the corresponding widths,
     then using these widths to fit in 2D and find the weights.
     Paramaters

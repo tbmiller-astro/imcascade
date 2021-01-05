@@ -1,14 +1,14 @@
 import numpy as np
 from scipy.optimize import least_squares
 import sep
-from figpy.mgm import MultiGaussModel
+from imcascade.mgm import MultiGaussModel
 
 import dynesty
 from scipy.stats import norm, truncnorm
 from dynesty import utils as dyfunc
 import emcee
 
-class Task(MultiGaussModel):
+class Fitter(MultiGaussModel):
     """A Class used fit images with MultiGaussModel"""
     def __init__(self, img, sig, psf_sig, psf_a, weight = None, mask = None,\
       sky_model = True,render_mode = 'erf', log_weight_scale = True, verbose = True):
@@ -89,7 +89,6 @@ class Task(MultiGaussModel):
         init_dict['phi'] = np.pi/2.
         bounds_dict['q'] = [0,1]
         init_dict['q'] = 0.5
-
 
         if sky_model:
             bkg_init = sep.Background(img,bw = 16, bh = 16)
@@ -190,10 +189,11 @@ class Task(MultiGaussModel):
 """
         min_res = least_squares(self.resid_1d, self.param_init, bounds = self.bnds, **ls_kwargs)
         self.min_res = min_res
+        self.min_param = min_res.x
         return min_res
 
     def set_up_express_run(self, set_params = None):
-        """ Funciton to set up 'express' run using pre-rendered images with a
+        """ Function to set up 'express' run using pre-rendered images with a
         fixed x0,y0, phi and q. Sets class attribute 'express_gauss_arr' which
         is needed to run dynesty or emcee in express mode
 
@@ -219,14 +219,16 @@ class Task(MultiGaussModel):
 
             x0= self.min_res.x[0]
             y0 = self.min_res.x[1]
-            phi = self.min_res.x[3]
             q_in = self.min_res.x[2]
+            phi = self.min_res.x[3]
 
         if self.verbose:
             print ('Parameters to be set:')
             print ('\t Galaxy Center: %.2f,%.2f'%(x0,y0) )
-            print ('\t PA: %.5f'%phi)
             print ('\t Axis Ratio: %.5f'%q_in)
+            print ('\t PA: %.5f'%phi)
+
+        self.exp_set_params = np.array([x0,y0,q_in,phi])
 
         mod_final = []
         for i,var_cur in enumerate( self.var ):
@@ -274,8 +276,11 @@ class Task(MultiGaussModel):
         return x
 
     def log_like_exp(self,exp_params):
-        final_a = xp_params[:-self.Ndof_sky]
 
+        if self.sky_model:
+            final_a = exp_params[:-self.Ndof_sky]
+        else:
+            final_a = np.copy(exp_params)
         if self.log_weight_scale: final_a = 10**final_a
         model = np.sum(final_a*self.express_gauss_arr, axis = -1)
 
@@ -312,10 +317,19 @@ class Task(MultiGaussModel):
                 _ = self.set_up_express_run()
             sampler = dynesty.DynamicNestedSampler( self.log_like_exp, self.ptform_exp, ndim= ndim, **dynesty_kwargs)
         sampler.run_nested()
+
         self.dynesty_res = sampler.results
 
         dyn_samples, dyn_weights = self.dynesty_res.samples, np.exp(self.dynesty_res.logwt - self.dynesty_res.logz[-1])
         post_samp = dyfunc.resample_equal(dyn_samples, dyn_weights)
+
+        if method == 'full':
+            self.dynesty_params = np.copy(post_samp)
+        else:
+            set_arr = self.exp_set_params[:,np.newaxis] *np.ones((4,post_samp.shape[0] ) )
+            set_arr = np.transpose(set_arr)
+            self.dynesty_param = np.hstack([set_arr, post_samp])
+
         return post_samp
 
 
