@@ -1,8 +1,6 @@
-
-from imcascade.Fitter import Fitter
+from imcascade.fitter import Fitter
 from imcascade.utils import min_diff_array
 import numpy as np
-import matplotlib.pyplot as plt
 from astropy.io import fits
 import sep
 from scipy.optimize import least_squares
@@ -182,7 +180,7 @@ class PSFFitter():
                 num_min = num_fit
 
         #Moving on to 2D fit
-        psf_task = Task(self.psf_data,sig_min, None,None, sky_model = False, log_weight_scale=False)
+        psf_task = Fitter(self.psf_data,sig_min, None,None, sky_model = False, log_weight_scale=False)
         min_res = psf_task.run_ls_min()
         a2D_min = min_res.x[4:]
 

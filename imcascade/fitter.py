@@ -324,13 +324,13 @@ class Fitter(MultiGaussModel):
         post_samp = dyfunc.resample_equal(dyn_samples, dyn_weights)
 
         if method == 'full':
-            self.dynesty_params = np.copy(post_samp)
+            self.posterier = np.copy(post_samp)
         else:
             set_arr = self.exp_set_params[:,np.newaxis] *np.ones((4,post_samp.shape[0] ) )
             set_arr = np.transpose(set_arr)
-            self.dynesty_param = np.hstack([set_arr, post_samp])
-
-        return post_samp
+            self.posterier = np.hstack([set_arr, post_samp])
+        self.post_method = 'dynesty-'+method
+        return sampler
 
 
     def run_emcee(self,method = 'express', nwalkers = 32, max_it = int(1e6), check_freq = int(500), print_progress = False):
@@ -343,8 +343,8 @@ class Fitter(MultiGaussModel):
                 if self.verbose: print ('Setting up express run')
                 self.set_up_express_run()
 
-            ndim = self.Ndof - 4
-            init_arr = np.ones(self.Ndof_gauss+self.Ndof_sky)
+            ndim = self.Ndof_gauss + self.Ndof_sky
+            init_arr = np.ones(ndim)
             init_arr[:-self.Ndof_sky] = np.log10(self.min_res.x[4:-self.Ndof_sky])
             init_arr[-self.Ndof_sky:] = self.min_res.x[-self.Ndof_sky:]
 
@@ -381,4 +381,6 @@ class Fitter(MultiGaussModel):
 
         self.emcee_sampler = sampler
         self.emcee_tau = tau
-        return sampler.get_chain(discard=int(3 * np.max(tau)), thin = int(0.3 * np.min(tau)),  flat=True)
+        self.posterier = sampler.get_chain(discard=int(3 * np.max(tau)), thin = int(0.3 * np.min(tau)),  flat=True)
+        self.post_method = 'emcee'+method
+        return sampler
