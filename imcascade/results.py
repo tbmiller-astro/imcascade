@@ -13,11 +13,11 @@ def calc_flux_input(weights,sig, cutoff = None):
 def r_root_func(r,f_L, weights,sig,cutoff):
     return 1.- f_L - np.sum(weights*np.exp(-1 * r**2 / (2*sig**2)),axis = -1 ) / calc_flux_input(weights,sig,cutoff = cutoff)
 
-vars_to_use = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss', 'has_psf', 'log_weight_scale','min_param','sky_model', 'posterier', 'post_method']
+vars_to_use = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss', 'has_psf', 'psf_a','psf_sig', 'log_weight_scale','min_param','sky_model', 'posterier', 'post_method']
 
 class ImcascadeResults():
     """A class used for collating imcascade results and performing analysis"""
-    def __init__(self, Obj):
+    def __init__(self, Obj, thin_posterier = 1):
         if type(Obj) == imcascade.fitter.Fitter:
             self.obj_type = 'class'
             dict_obj = vars(Obj)
@@ -39,13 +39,13 @@ class ImcascadeResults():
                 print ('Could not load -', var_name)
 
         if hasattr(self, 'posterier'):
-            self.x0 = self.posterier[:,0]
-            self.y0 = self.posterier[:,1]
-            self.q = self.posterier[:,2]
-            self.pa = self.posterier[:,3]
-            self.weights = self.posterier[:,4:4+self.Ndof_gauss]
+            self.x0 = self.posterier[::int(thin_posterier),0]
+            self.y0 = self.posterier[::int(thin_posterier),1]
+            self.q = self.posterier[::int(thin_posterier),2]
+            self.pa = self.posterier[::int(thin_posterier),3]
+            self.weights = self.posterier[::int(thin_posterier),4:4+self.Ndof_gauss]
 
-            if self.sky_model: self.sky_params = self.posterier[:,4+self.Ndof_gauss:]
+            if self.sky_model: self.sky_params = self.posterier[::int(thin_posterier),4+self.Ndof_gauss:]
 
         elif hasattr(self, 'min_param'):
             self.x0 = self.min_param[0]
@@ -108,14 +108,15 @@ class ImcascadeResults():
         else:
             return np.sum(prof_all, axis = -1)
 
-    def run_basic_analysis(self, zpt = None, cutoff = None, errp_lo = 16, errp_hi =84):
+    def run_basic_analysis(self, zpt = None, cutoff = None, errp_lo = 16, errp_hi =84,\
+      save_results = False, save_file = './imcascade_results.asdf'):
 
         #Run all basic calculations neccesary
-        self.calc_flux()
-        self.calc_r20()
-        self.calc_r50()
-        self.calc_r80()
-        self.calc_r90()
+        if not hasattr(self,'flux'): self.calc_flux(cutoff = cutoff)
+        if not hasattr(self,'r20'): self.calc_r20(cutoff = cutoff)
+        if not hasattr(self,'r50'): self.calc_r50(cutoff = cutoff)
+        if not hasattr(self,'r80'): self.calc_r80(cutoff = cutoff)
+        if not hasattr(self,'r90'): self.calc_r90(cutoff = cutoff)
 
         res_dict = {}
         if self.weights.ndim == 1:
@@ -143,4 +144,29 @@ class ImcascadeResults():
 
             res_dict['C80_20'] = get_med_errors(self.r80 / self.r20,lo = errp_lo, hi = errp_hi)
             res_dict['C90_50'] = get_med_errors(self.r90 / self.r50,lo = errp_lo, hi = errp_hi)
+
+            res_dict['x0'] = get_med_errors(self.x0,lo = errp_lo, hi = errp_hi)
+            res_dict['y0'] = get_med_errors(self.y0,lo = errp_lo, hi = errp_hi)
+            res_dict['q'] = get_med_errors(self.q,lo = errp_lo, hi = errp_hi)
+            res_dict['pa'] = get_med_errors(self.pa,lo = errp_lo, hi = errp_hi)
+
+
+        if save_results:
+            if self.obj_type == 'file':
+                input_asdf = asdf.open(self.input)
+                input_asdf.tree.update(res_dict)
+                input_asdf.write_to(self.input)
+            else:
+                dict_to_save = vars(self)
+                dict_to_save.pop('input')
+                dict_to_save.pop('obj_type')
+
+                if hasattr(self, 'posterier'):
+                    for key in ['flux','r20','r50','r80','r90','x0','y0','q','pa']:
+                        dict_to_save[key+'_post'] = dict_to_save.pop(key)
+
+                dict_to_save.update(res_dict)
+                file = asdf.AsdfFile(dict_to_save)
+                file.write_to(save_file)
+
         return res_dict

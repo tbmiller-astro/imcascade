@@ -3,7 +3,7 @@ from scipy.special import erf
 from scipy.ndimage import rotate
 
 class MultiGaussModel():
-    """A class used to generate models based on sums of series of Gaussians """
+    """A class used to generate models based series of Gaussians """
 
     def __init__(self, shape, sig, psf_sig, psf_a, verbose = True, \
       sky_model = True, render_mode = 'erf', log_weight_scale = True):

@@ -2,11 +2,12 @@ import numpy as np
 from scipy.optimize import least_squares
 import sep
 from imcascade.mgm import MultiGaussModel
-
+from imcascade.results import ImcascadeResults,vars_to_use
 import dynesty
 from scipy.stats import norm, truncnorm
 from dynesty import utils as dyfunc
 import emcee
+import asdf
 
 class Fitter(MultiGaussModel):
     """A Class used fit images with MultiGaussModel"""
@@ -384,3 +385,24 @@ class Fitter(MultiGaussModel):
         self.posterier = sampler.get_chain(discard=int(3 * np.max(tau)), thin = int(0.3 * np.min(tau)),  flat=True)
         self.post_method = 'emcee'+method
         return sampler
+
+    def save_results(self,file_name, run_basic_analysis = True, thin_posterier = 1, zpt = None, cutoff = None, errp_lo = 16, errp_hi =84):
+
+        if run_basic_analysis:
+            res = ImcascadeResults(self, thin_posterier = thin_posterier)
+            res.run_basic_analysis(zpt = zpt, cutoff = cutoff, errp_lo = errp_lo, errp_hi =errp_hi,\
+              save_results = True , save_file = file_name)
+            return res
+        else:
+            #If analysis is not to be run then simply save the important contents of the class
+            dict_to_save = {}
+            for key in vars_to_use:
+                try:
+                    dict_to_save[key] = vars(self)[key]
+                except:
+                    continue
+
+            file = asdf.AsdfFile(dict_to_save)
+            file.write_to(file_name)
+
+            return dict_to_save
