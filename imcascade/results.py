@@ -1,8 +1,10 @@
-import imcascade
-from imcascade.utils import get_med_errors
 import numpy as np
 import asdf
 from scipy.optimize import root_scalar
+
+import imcascade
+from imcascade.utils import get_med_errors
+
 
 def calc_flux_input(weights,sig, cutoff = None):
     if cutoff == None:
@@ -63,7 +65,7 @@ class ImcascadeResults():
         if cutoff == None:
             flux_cur = np.sum(self.weights, axis = -1)
         else:
-            flux_cur - np.sum(self.weights*(1-np.exp(-1*cutoff**2/ (2*self.sig**2) ) ), axis = -1 )
+            flux_cur = np.sum(self.weights*(1-np.exp(-1*cutoff**2/ (2*self.sig**2) ) ), axis = -1 )
         self.flux = flux_cur
         return flux_cur
 
@@ -76,22 +78,22 @@ class ImcascadeResults():
             return np.array(list(map(f_cur, self.weights)) )
 
     def calc_r90(self,cutoff = None):
-        r90_cur = self.calc_rX(90.)
+        r90_cur = self.calc_rX(90., cutoff = cutoff)
         self.r90 = r90_cur
         return r90_cur
 
     def calc_r80(self,cutoff = None):
-        r80_cur = self.calc_rX(80.)
+        r80_cur = self.calc_rX(80., cutoff = cutoff)
         self.r80 = r80_cur
         return r80_cur
 
     def calc_r50(self,cutoff = None):
-        r50_cur = self.calc_rX(50.)
+        r50_cur = self.calc_rX(50., cutoff = cutoff)
         self.r50 = r50_cur
         return r50_cur
 
     def calc_r20(self,cutoff = None):
-        r20_cur = self.calc_rX(20.)
+        r20_cur = self.calc_rX(20., cutoff = cutoff)
         self.r20 = r20_cur
         return r20_cur
 
@@ -145,24 +147,18 @@ class ImcascadeResults():
             res_dict['C80_20'] = get_med_errors(self.r80 / self.r20,lo = errp_lo, hi = errp_hi)
             res_dict['C90_50'] = get_med_errors(self.r90 / self.r50,lo = errp_lo, hi = errp_hi)
 
-            res_dict['x0'] = get_med_errors(self.x0,lo = errp_lo, hi = errp_hi)
-            res_dict['y0'] = get_med_errors(self.y0,lo = errp_lo, hi = errp_hi)
-            res_dict['q'] = get_med_errors(self.q,lo = errp_lo, hi = errp_hi)
-            res_dict['pa'] = get_med_errors(self.pa,lo = errp_lo, hi = errp_hi)
-
-
         if save_results:
             if self.obj_type == 'file':
                 input_asdf = asdf.open(self.input)
                 input_asdf.tree.update(res_dict)
                 input_asdf.write_to(self.input)
             else:
-                dict_to_save = vars(self)
+                dict_to_save = vars(self).copy()
                 dict_to_save.pop('input')
                 dict_to_save.pop('obj_type')
 
                 if hasattr(self, 'posterier'):
-                    for key in ['flux','r20','r50','r80','r90','x0','y0','q','pa']:
+                    for key in ['flux','r20','r50','r80','r90']:
                         dict_to_save[key+'_post'] = dict_to_save.pop(key)
 
                 dict_to_save.update(res_dict)

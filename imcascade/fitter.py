@@ -1,13 +1,14 @@
 import numpy as np
+import asdf
 from scipy.optimize import least_squares
-import sep
+from scipy.stats import norm, truncnorm
+
 from imcascade.mgm import MultiGaussModel
 from imcascade.results import ImcascadeResults,vars_to_use
+
 import dynesty
-from scipy.stats import norm, truncnorm
 from dynesty import utils as dyfunc
 import emcee
-import asdf
 
 class Fitter(MultiGaussModel):
     """A Class used fit images with MultiGaussModel"""
@@ -79,12 +80,12 @@ class Fitter(MultiGaussModel):
         bounds_dict = {}
         init_dict = {}
         #Measuring shape of img and w
-        x_mid = img.shape[0]/2.
-        y_mid = img.shape[0]/2.
-        bounds_dict['x0'] = [x_mid - 5, x_mid + 5]
-        bounds_dict['y0'] = [y_mid - 5,y_mid + 5]
-        init_dict['x0'] = x_mid
-        init_dict['y0'] = y_mid
+
+        init_dict['x0'] = self.x_mid
+        init_dict['y0'] = self.y_mid
+        bounds_dict['x0'] = [init_dict['x0'] - 10, init_dict['x0'] + 10]
+        bounds_dict['y0'] = [init_dict['y0'] - 10,init_dict['y0'] + 10]
+
 
         bounds_dict['phi'] = [0,np.pi]
         init_dict['phi'] = np.pi/2.
@@ -92,34 +93,31 @@ class Fitter(MultiGaussModel):
         init_dict['q'] = 0.5
 
         if sky_model:
-            bkg_init = sep.Background(img,bw = 16, bh = 16)
-            obj_init,seg_init = sep.extract(img - bkg_init.back(), 5, err = bkg_init.rms(), segmentation_map=True)
+            #Try to make educated guesses about sky model
+            init_dict['sky0'] = np.median(self.img)
+            bounds_dict['sky0'] = [-np.abs(init_dict['sky0'])*5, np.abs(init_dict['sky0'])*5]
 
-            seg_init[seg_init>1] = 1
-            sep_mask = np.copy(seg_init)
+            #estimate X and Y slopes using edges
+            use_x_edge = np.where(self.mask[:,-1]*self.mask[:,0] == 0)
+            init_dict['sky1'] =  np.median(self.img[:,1][use_x_edge] - img[:,0][use_x_edge])/img.shape[0]
 
-            bkg = sep.Background(img,mask = sep_mask,  maskthresh=0.,bw = 16, bh = 16)
-            obj,seg = sep.extract(img - bkg.back(), 5, err = bkg.rms(), segmentation_map=True)
-            init_dict['sky0'] = bkg.globalback
-            bounds_dict['sky0'] = [-25,25]
+            use_y_edge = np.where(self.mask[-1,:]*self.mask[0,:] == 0)
+            init_dict['sky2'] = np.median(self.img[-1,:][use_y_edge] - img[0,:][use_y_edge])/img.shape[1]
 
-            init_dict['sky1'] = 0
-            init_dict['sky2'] = 0
+            bounds_dict['sky1'] = [-10*np.abs(init_dict['sky1']), 10*np.abs(init_dict['sky1'])]
+            bounds_dict['sky2'] = [-10*np.abs(init_dict['sky2']), 10*np.abs(init_dict['sky2'])]
+            init_sky_model =  self.get_sky_model([init_dict['sky0'],init_dict['sky1'],init_dict['sky2']] )
 
-            bounds_dict['sky1'] = [-1., 1.]
-            bounds_dict['sky2'] = [-1., 1.]
-            self.A_guess = np.max(obj['flux'])*1.25
-            self.sep_bkg = bkg
-
+            A_guess = np.sum( (img - init_sky_model )[np.where(self.mask == 0)]  )
         else:
-            self.A_guess = np.sum(img)
+            A_guess = np.sum(img)
 
         #Below assumes all gaussian have same A
-        a_norm = np.ones(self.Ndof_gauss)*self.A_guess/self.Ndof_gauss
+        a_norm = np.ones(self.Ndof_gauss)*A_guess/self.Ndof_gauss
 
         #If using log scale then adjust initial guesses
         if self.log_weight_scale:
-            self.A_guess = np.log10(self.A_guess)
+            A_guess = np.log10(A_guess)
             a_norm = np.log10(a_norm)
             #set minimum possible weight value
             a_min = -9
@@ -128,7 +126,7 @@ class Fitter(MultiGaussModel):
 
         for i in range(self.Ndof_gauss):
             init_dict['a%i'%i] = a_norm[i]
-            bounds_dict['a%i'%i] = [a_min, self.A_guess]
+            bounds_dict['a%i'%i] = [a_min, A_guess]
 
         #Add option to specificy your own initial conditions and bounds
         self.lb = [bounds_dict['x0'][0], bounds_dict['y0'][0], bounds_dict['q'][0], bounds_dict['phi'][0]]
@@ -319,8 +317,6 @@ class Fitter(MultiGaussModel):
             sampler = dynesty.DynamicNestedSampler( self.log_like_exp, self.ptform_exp, ndim= ndim, **dynesty_kwargs)
         sampler.run_nested()
 
-        self.dynesty_res = sampler.results
-
         dyn_samples, dyn_weights = self.dynesty_res.samples, np.exp(self.dynesty_res.logwt - self.dynesty_res.logz[-1])
         post_samp = dyfunc.resample_equal(dyn_samples, dyn_weights)
 
@@ -345,9 +341,7 @@ class Fitter(MultiGaussModel):
                 self.set_up_express_run()
 
             ndim = self.Ndof_gauss + self.Ndof_sky
-            init_arr = np.ones(ndim)
-            init_arr[:-self.Ndof_sky] = np.log10(self.min_res.x[4:-self.Ndof_sky])
-            init_arr[-self.Ndof_sky:] = self.min_res.x[-self.Ndof_sky:]
+            init_arr = self.min_param[4:]
 
             pos = init_arr + 0.05 * np.random.randn(nwalkers, ndim)
 
@@ -382,8 +376,16 @@ class Fitter(MultiGaussModel):
 
         self.emcee_sampler = sampler
         self.emcee_tau = tau
-        self.posterier = sampler.get_chain(discard=int(3 * np.max(tau)), thin = int(0.3 * np.min(tau)),  flat=True)
-        self.post_method = 'emcee'+method
+        post_samp = sampler.get_chain(discard=int(3 * np.max(tau)), thin = int(0.3 * np.min(tau)),  flat=True)
+
+        if method == 'express':
+            set_arr = self.exp_set_params[:,np.newaxis] *np.ones((4,post_samp.shape[0] ) )
+            set_arr = np.transpose(set_arr)
+            self.posterier = np.hstack([set_arr, post_samp])
+        else:
+            self.posterier = np.copy(post_samp)
+
+        self.post_method = 'emcee-'+method
         return sampler
 
     def save_results(self,file_name, run_basic_analysis = True, thin_posterier = 1, zpt = None, cutoff = None, errp_lo = 16, errp_hi =84):

@@ -50,6 +50,8 @@ class MultiGaussModel():
             if verbose: print("Incompatible render mode, must choose 'gauss' or 'erf'! Setting to 'erf'")
             self.render_mode = 'erf'
 
+        self.x_mid = shape[0]/2.
+        self.y_mid = shape[1]/2.
         x_pix = np.arange(0,shape[0])
         y_pix = np.arange(0,shape[1])
         X,Y = np.meshgrid(x_pix,y_pix)
@@ -174,7 +176,7 @@ class MultiGaussModel():
 """
         a,b,c = args
 
-        return a + self.X*b + self.Y*c
+        return a + (self.X - self.x_mid)*b + (self.Y - self.y_mid)*c
 
     def make_model(self,param):
         """ Function to generate model image based on given paramters array.
