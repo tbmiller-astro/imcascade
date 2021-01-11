@@ -2,6 +2,11 @@ import numpy as np
 from scipy.special import gamma
 import itertools
 
+def dict_add(dict_use, key, obj):
+    dict_res = dict_use.copy()
+    if key not in dict_res:
+        dict_res[key] = obj
+    return dict_res
 
 def get_med_errors(arr, lo = 16,hi = 84):
     med,lo,hi = np.percentile(arr, [50.,lo,hi])

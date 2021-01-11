@@ -5,7 +5,7 @@ from scipy.stats import norm, truncnorm
 
 from imcascade.mgm import MultiGaussModel
 from imcascade.results import ImcascadeResults,vars_to_use
-
+from imcascade.utils import dict_add
 import dynesty
 from dynesty import utils as dyfunc
 import emcee
@@ -13,7 +13,8 @@ import emcee
 class Fitter(MultiGaussModel):
     """A Class used fit images with MultiGaussModel"""
     def __init__(self, img, sig, psf_sig, psf_a, weight = None, mask = None,\
-      sky_model = True,render_mode = 'erf', log_weight_scale = True, verbose = True):
+      sky_model = True,render_mode = 'erf', log_weight_scale = True, verbose = True,
+      init_dict = {}, bounds_dict = {}):
         """Initialize a Task instance
         Paramaters
         ----------
@@ -49,10 +50,15 @@ class Fitter(MultiGaussModel):
             Wether to treat weights as log scale, Default True
         verbose: bool, optional
             If true will log and print out errors
+        init_dict: dict, Optional
+            Dictionary specifying initial guesses for least_squares fitting. The code
+            is desigined to make 'intelligent' guesses if none are provided
+        bounds_dict: dict, Optional
+            Dictionary specifying boundss for least_squares fitting and priors. The code
+            is desigined to make 'intelligent' guesses if none are provided
 """
         self.img  = img
         self.verbose = verbose
-
         if weight is None:
             self.weight = np.ones(self.img.shape)
         else:
@@ -77,35 +83,48 @@ class Fitter(MultiGaussModel):
           verbose = verbose, sky_model = sky_model, render_mode = render_mode, \
           log_weight_scale = log_weight_scale)
 
-        bounds_dict = {}
-        init_dict = {}
         #Measuring shape of img and w
 
-        init_dict['x0'] = self.x_mid
-        init_dict['y0'] = self.y_mid
-        bounds_dict['x0'] = [init_dict['x0'] - 10, init_dict['x0'] + 10]
-        bounds_dict['y0'] = [init_dict['y0'] - 10,init_dict['y0'] + 10]
+        #init_dict['x0'] = self.x_mid
+        #init_dict['y0'] = self.y_mid
+        #bounds_dict['x0'] = [init_dict['x0'] - 10, init_dict['x0'] + 10]
+        #bounds_dict['y0'] = [init_dict['y0'] - 10,init_dict['y0'] + 10]
 
+        init_dict = dict_add(init_dict, 'x0',self.x_mid)
+        init_dict = dict_add(init_dict, 'y0',self.y_mid)
+        bounds_dict = dict_add(bounds_dict, 'x0',[init_dict['x0'] - 10,init_dict['x0'] + 10])
+        bounds_dict = dict_add(bounds_dict, 'y0',[init_dict['y0'] - 10,init_dict['y0'] + 10])
 
-        bounds_dict['phi'] = [0,np.pi]
-        init_dict['phi'] = np.pi/2.
-        bounds_dict['q'] = [0,1]
-        init_dict['q'] = 0.5
+        init_dict = dict_add(init_dict, 'phi', np.pi/2.)
+        bounds_dict = dict_add(bounds_dict, 'phi', [0,np.pi])
+
+        init_dict = dict_add(init_dict,'q', 0.5)
+        bounds_dict = dict_add(bounds_dict, 'q', [0,1.])
+
+        #bounds_dict['phi'] = [0,np.pi]
+        #init_dict['phi'] = np.pi/2.
+        #bounds_dict['q'] = [0,1]
+        #init_dict['q'] = 0.5
 
         if sky_model:
             #Try to make educated guesses about sky model
-            init_dict['sky0'] = np.median(self.img)
-            bounds_dict['sky0'] = [-np.abs(init_dict['sky0'])*5, np.abs(init_dict['sky0'])*5]
+            sky0_guess = np.median(self.img)
+            init_dict = dict_add(init_dict, 'sky0', sky0_guess)
+            bounds_dict = dict_add(bounds_dict, 'sky0', [-np.abs(sky0_guess)*5, np.abs(sky0_guess)*5])
 
             #estimate X and Y slopes using edges
             use_x_edge = np.where(self.mask[:,-1]*self.mask[:,0] == 0)
-            init_dict['sky1'] =  np.median(self.img[:,1][use_x_edge] - img[:,0][use_x_edge])/img.shape[0]
+            sky1_guess = np.median(self.img[:,1][use_x_edge] - img[:,0][use_x_edge])/img.shape[0]
+
+            init_dict = dict_add(init_dict, 'sky1', sky1_guess)
+            bounds_dict = dict_add(bounds_dict, 'sky1', [-np.abs(sky1_guess)*5, np.abs(sky1_guess)*5])
 
             use_y_edge = np.where(self.mask[-1,:]*self.mask[0,:] == 0)
-            init_dict['sky2'] = np.median(self.img[-1,:][use_y_edge] - img[0,:][use_y_edge])/img.shape[1]
+            sky2_guess = np.median(self.img[-1,:][use_y_edge] - img[0,:][use_y_edge])/img.shape[1]
 
-            bounds_dict['sky1'] = [-10*np.abs(init_dict['sky1']), 10*np.abs(init_dict['sky1'])]
-            bounds_dict['sky2'] = [-10*np.abs(init_dict['sky2']), 10*np.abs(init_dict['sky2'])]
+            init_dict = dict_add(init_dict, 'sky2', sky2_guess)
+            bounds_dict = dict_add(bounds_dict, 'sky2', [-np.abs(sky2_guess)*5, np.abs(sky2_guess)*5])
+
             init_sky_model =  self.get_sky_model([init_dict['sky0'],init_dict['sky1'],init_dict['sky2']] )
 
             A_guess = np.sum( (img - init_sky_model )[np.where(self.mask == 0)]  )
@@ -125,16 +144,16 @@ class Fitter(MultiGaussModel):
             a_min = 0
 
         for i in range(self.Ndof_gauss):
-            init_dict['a%i'%i] = a_norm[i]
-            bounds_dict['a%i'%i] = [a_min, A_guess]
+            init_dict = dict_add(init_dict,'a%i'%i, a_norm[i] )
+            bounds_dict = dict_add(bounds_dict,'a%i'%i,  [a_min, A_guess])
 
-        #Add option to specificy your own initial conditions and bounds
+        #Now set initial and boundry values once defaults or inputs have been used
         self.lb = [bounds_dict['x0'][0], bounds_dict['y0'][0], bounds_dict['q'][0], bounds_dict['phi'][0]]
         self.ub = [bounds_dict['x0'][1], bounds_dict['y0'][1], bounds_dict['q'][1], bounds_dict['phi'][1]]
 
         self.param_init = np.ones(self.Ndof)
         self.param_init[0] = init_dict['x0']
-        self.param_init[1] = init_dict['x0']
+        self.param_init[1] = init_dict['y0']
         self.param_init[2] = init_dict['q']
 
         self.param_init[3] = init_dict['phi']
@@ -249,13 +268,48 @@ class Fitter(MultiGaussModel):
         return gauss_arr
 
     def chi_sq(self,params):
+        """Function to calculate chi_sq for a given set of paramters
+
+        Paramaters
+        ----------
+        params: Array
+            List of parameters to define model
+        Returns
+        -------
+        chi^2: float
+            Chi squared statistic for the given set of parameters
+"""
         model = self.make_model(params)
         return np.sum( (self.img - model)**2 *self.weight)
 
     def log_like(self,params):
+        """Function to calculate the log likeliehood for a given set of paramters
+
+        Paramaters
+        ----------
+        params: Array
+            List of parameters to define model
+
+        Returns
+        -------
+        log likeliehood: float
+            log likeliehood for a given set of paramters, defined as -0.5*chi^2
+"""
         return -0.5*self.chi_sq(params)
 
     def ptform(self, u):
+        """Prior transformation function to be used in dynesty 'full' mode
+
+        Paramaters
+        ----------
+        u: array
+            array of random numbers from 0 to 1
+
+        Returns
+        -------
+        x: array
+            array containing distribution of parameters from prior
+"""
         x = np.zeros(len(u))
         x[0] = norm.ppf(u[0], loc = self.param_init[0], scale = 1)
         x[1] = norm.ppf(u[1], loc = self.param_init[1], scale = 1)
@@ -275,6 +329,20 @@ class Fitter(MultiGaussModel):
         return x
 
     def log_like_exp(self,exp_params):
+        """Function to calculate the log likeliehood for a given set of paramters,
+        specifically using the pre-renedered model for the 'express' mode
+
+        Paramaters
+        ----------
+        exo_params: Array
+            List of parameters to define model. Length is Ndof_gauss + Ndof_sky
+            since the structural parameters (x0,y0,q, PA) are set
+
+        Returns
+        -------
+        log likeliehood: float
+            log likeliehood for a given set of paramters, defined as -0.5*chi^2
+"""
 
         if self.sky_model:
             final_a = exp_params[:-self.Ndof_sky]
@@ -289,11 +357,37 @@ class Fitter(MultiGaussModel):
         return -0.5*np.sum( (self.img - model)**2 *self.weight)
 
     def ptform_exp(self, u):
+        """Prior transformation function to be used in dynesty 'express' mode.
+        By default they are all unifrom priors defined by self.lb and self.ub
+
+        Paramaters
+        ----------
+        u: array
+            array of random numbers from 0 to 1
+
+        Returns
+        -------
+        x: array
+            array containing distribution of parameters from prior
+"""
         x = np.zeros(len(u))
         x = u*(self.ub[4:] - self.lb[4:]) + self.lb[4:]
         return x
 
     def log_prior_express(self,params):
+        """Prior function to be used in emcee 'express' mode.
+        By default they are all unifrom priors defined by self.lb and self.ub
+
+        Paramaters
+        ----------
+        u: array
+            array of random numbers from 0 to 1
+
+        Returns
+        -------
+        log prior: float
+            Value of prior for given set of params
+"""
         inside_prior = (params > self.lb[4:])*(params < self.ub[4:])
         if inside_prior.all():
             return 0
@@ -301,23 +395,59 @@ class Fitter(MultiGaussModel):
             return -np.inf
 
     def log_prob_express(self,params):
+        """Probability function to be used in emcee 'express' mode.
+        By default they are all unifrom priors defined by self.lb and self.ub
+
+        Paramaters
+        ----------
+        u: array
+            array of random numbers from 0 to 1
+
+        Returns
+        -------
+        log prob: float
+            Value of log Probability for given set of params
+"""
         logp = self.log_prior_express(params)
         return self.log_like_exp(params) + logp
 
 
-    def run_dynesty(self,method = 'full', dynesty_kwargs = {}):
+    def run_dynesty(self,method = 'full', sampler_kwargs = {}, run_nested_kwargs = {}):
+        """Function to run dynesty to sample the posterier distribution using either the
+        'full' methods which explores all paramters, or the 'express' method which sets
+        the structural parameters.
+
+        Paramaters
+        ----------
+        method: str: 'full' or 'express'
+            Which method to use to run dynesty
+        sampler_kwargs: dict
+            set of keyword arguments to pass the the dynesty DynamicNestedSampler call, see:
+            https://dynesty.readthedocs.io/en/latest/api.html#dynesty.dynesty.DynamicNestedSampler
+        run_nested_kwargs: dict
+            set of keyword arguments to pass the the dynesty run_nested call, see:
+            https://dynesty.readthedocs.io/en/latest/api.html#dynesty.dynamicsampler.DynamicSampler.run_nested
+
+        Returns
+        -------
+        Posterier: Array
+            Posterier distribution derrived. If method is 'express', the first 4 columns,
+            containg x0,y0,PA and q, are all the same and equal to values used to pre-rended the images
+"""
         if method == 'full':
             ndim = self.Ndof
-            sampler = dynesty.DynamicNestedSampler( self.log_like, self.ptform, ndim= ndim, **dynesty_kwargs)
+            sampler = dynesty.DynamicNestedSampler( self.log_like, self.ptform, ndim= ndim, **sampler_kwargs)
         if method == 'express':
             ndim = self.Ndof_gauss + self.Ndof_sky
             if not hasattr(self, 'express_gauss_arr'):
                 if self.verbose: print ('Setting up Express params')
                 _ = self.set_up_express_run()
-            sampler = dynesty.DynamicNestedSampler( self.log_like_exp, self.ptform_exp, ndim= ndim, **dynesty_kwargs)
-        sampler.run_nested()
+            sampler = dynesty.DynamicNestedSampler( self.log_like_exp, self.ptform_exp, ndim= ndim, **sampler_kwargs)
+        sampler.run_nested(**run_nested_kwargs)
 
-        dyn_samples, dyn_weights = self.dynesty_res.samples, np.exp(self.dynesty_res.logwt - self.dynesty_res.logz[-1])
+        self.dynesty_sampler = sampler
+        res_cur = sampler.results
+        dyn_samples, dyn_weights = res_cur.samples, np.exp(res_cur.logwt - res_cur.logz[-1])
         post_samp = dyfunc.resample_equal(dyn_samples, dyn_weights)
 
         if method == 'full':
@@ -327,11 +457,11 @@ class Fitter(MultiGaussModel):
             set_arr = np.transpose(set_arr)
             self.posterier = np.hstack([set_arr, post_samp])
         self.post_method = 'dynesty-'+method
-        return sampler
+        return self.posterier
 
 
     def run_emcee(self,method = 'express', nwalkers = 32, max_it = int(1e6), check_freq = int(500), print_progress = False):
-
+        "Not sure if it will stay"
         if method == 'full':
             print(" 'full' not yet implemented")
             return 0
@@ -343,7 +473,8 @@ class Fitter(MultiGaussModel):
             ndim = self.Ndof_gauss + self.Ndof_sky
             init_arr = self.min_param[4:]
 
-            pos = init_arr + 0.05 * np.random.randn(nwalkers, ndim)
+            #pos = init_arr + 0.05 * np.random.randn(nwalkers, ndim)
+            pos = (self.ub[4:] - self.lb[4:])*np.random.uniform(size = (nwalkers,ndim) )  + self.lb[4:]
 
             #Check to see if initial positions are valid
             for ex in pos:
@@ -389,7 +520,21 @@ class Fitter(MultiGaussModel):
         return sampler
 
     def save_results(self,file_name, run_basic_analysis = True, thin_posterier = 1, zpt = None, cutoff = None, errp_lo = 16, errp_hi =84):
+        """Function to save results after run_ls_min, run_dynesty and/or run_emcee is performed. Will be saved as an ASDF file.
 
+        Paramaters
+        ----------
+        file_name: str
+            Str defining location of where to save data
+        run_basic_analysis: Bool (default true)
+            If true will run ImcascadeResults.run_basic_analysis
+
+        Returns
+        -------
+        Posterier: Array
+            Posterier distribution derrived. If method is 'express', the first 4 columns,
+            containg x0,y0,PA and q, are all the same and equal to values used to pre-rended the images
+"""
         if run_basic_analysis:
             res = ImcascadeResults(self, thin_posterier = thin_posterier)
             res.run_basic_analysis(zpt = zpt, cutoff = cutoff, errp_lo = errp_lo, errp_hi =errp_hi,\
