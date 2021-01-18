@@ -2,6 +2,13 @@ import numpy as np
 from scipy.special import gamma
 import itertools
 
+def asinh_scale(start,end,num):
+    temp = np.linspace(np.arcsinh(start), np.arcsinh(end), num = num )
+    return np.sinh(temp)
+
+def log_scale(start,end,num):
+    return np.logspace(np.log10(start), np.log10(end), num = num)
+
 def dict_add(dict_use, key, obj):
     dict_res = dict_use.copy()
     if key not in dict_res:

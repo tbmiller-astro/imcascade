@@ -10,6 +10,24 @@ import dynesty
 from dynesty import utils as dyfunc
 import emcee
 
+def Fitter_from_asdf(file_name):
+    af = asdf.open(file_name,copy_arrays=True)
+    dict = af.tree.copy()
+
+    keys_for_func = ['weight','mask','sky_model','render_mode','log_weight_scale',
+    'verbose']
+    kwargs = {}
+    for key in dict:
+        if key in keys_for_func:
+            kwargs[key] = dict[key]
+
+    img = np.copy(dict.pop('img'))
+    sig = dict.pop('sig')
+    psf_sig = dict.pop('psf_sig')
+    psf_a = dict.pop('psf_a')
+    inst = Fitter(img,sig,psf_sig,psf_a, **kwargs)
+    return inst
+
 class Fitter(MultiGaussModel):
     """A Class used fit images with MultiGaussModel"""
     def __init__(self, img, sig, psf_sig, psf_a, weight = None, mask = None,\
@@ -101,14 +119,9 @@ class Fitter(MultiGaussModel):
         init_dict = dict_add(init_dict,'q', 0.5)
         bounds_dict = dict_add(bounds_dict, 'q', [0,1.])
 
-        #bounds_dict['phi'] = [0,np.pi]
-        #init_dict['phi'] = np.pi/2.
-        #bounds_dict['q'] = [0,1]
-        #init_dict['q'] = 0.5
-
         if sky_model:
             #Try to make educated guesses about sky model
-            sky0_guess = np.median(self.img)
+            sky0_guess = np.median(self.img[np.where(self.mask == 0)])
             init_dict = dict_add(init_dict, 'sky0', sky0_guess)
             bounds_dict = dict_add(bounds_dict, 'sky0', [-np.abs(sky0_guess)*5, np.abs(sky0_guess)*5])
 
@@ -127,10 +140,10 @@ class Fitter(MultiGaussModel):
 
             init_sky_model =  self.get_sky_model([init_dict['sky0'],init_dict['sky1'],init_dict['sky2']] )
 
-            A_guess = np.sum( (img - init_sky_model )[np.where(self.mask == 0)]  )
+            A_guess = np.sum( (self.img - init_sky_model )[np.where(self.mask == 0)]  )
         else:
             A_guess = np.sum(img)
-
+        print (A_guess)
         #Below assumes all gaussian have same A
         a_norm = np.ones(self.Ndof_gauss)*A_guess/self.Ndof_gauss
 
