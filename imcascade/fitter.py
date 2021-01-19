@@ -10,7 +10,7 @@ import dynesty
 from dynesty import utils as dyfunc
 import emcee
 
-def Fitter_from_asdf(file_name, init_dict= {}, bounds_dict = {}):
+def FitterFromASDF(file_name, init_dict= {}, bounds_dict = {}):
     af = asdf.open(file_name,copy_arrays=True)
     dict = af.tree.copy()
 
