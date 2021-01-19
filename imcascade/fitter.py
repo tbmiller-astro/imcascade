@@ -10,7 +10,7 @@ import dynesty
 from dynesty import utils as dyfunc
 import emcee
 
-def Fitter_from_asdf(file_name):
+def Fitter_from_asdf(file_name, init_dict= {}, bounds_dict = {}):
     af = asdf.open(file_name,copy_arrays=True)
     dict = af.tree.copy()
 
@@ -25,7 +25,7 @@ def Fitter_from_asdf(file_name):
     sig = dict.pop('sig')
     psf_sig = dict.pop('psf_sig')
     psf_a = dict.pop('psf_a')
-    inst = Fitter(img,sig,psf_sig,psf_a, **kwargs)
+    inst = Fitter(img,sig,psf_sig,psf_a,init_dict = init_dict, bounds_dict = bounds_dict **kwargs)
     return inst
 
 class Fitter(MultiGaussModel):
