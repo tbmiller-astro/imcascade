@@ -25,7 +25,7 @@ def FitterFromASDF(file_name, init_dict= {}, bounds_dict = {}):
     sig = dict.pop('sig')
     psf_sig = dict.pop('psf_sig')
     psf_a = dict.pop('psf_a')
-    inst = Fitter(img,sig,psf_sig,psf_a,init_dict = init_dict, bounds_dict = bounds_dict **kwargs)
+    inst = Fitter(img,sig,psf_sig,psf_a,init_dict = init_dict, bounds_dict = bounds_dict, **kwargs)
     return inst
 
 class Fitter(MultiGaussModel):
