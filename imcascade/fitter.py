@@ -155,7 +155,6 @@ class Fitter(MultiGaussModel):
             init_dict = dict_add(init_dict, 'a_min', -9)
         else:
             init_dict = dict_add(init_dict, 'flux', A_guess )
-            print (init_dict)
             init_dict = dict_add(init_dict, 'a_unif', init_dict['flux']/self.Ndof_gauss )
             init_dict = dict_add(init_dict, 'a_min', 0)
 
