@@ -143,7 +143,7 @@ class Fitter(MultiGaussModel):
             A_guess = np.sum( (self.img - init_sky_model )[np.where(self.mask == 0)]  )
         else:
             A_guess = np.sum(img)
-        print (A_guess)
+
         #Below assumes all gaussian have same A
         a_norm = np.ones(self.Ndof_gauss)*A_guess/self.Ndof_gauss
 
