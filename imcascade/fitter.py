@@ -149,14 +149,15 @@ class Fitter(MultiGaussModel):
 
         #If using log scale then adjust initial guesses
         if self.log_weight_scale:
-            dict_add(init_dict, 'flux', np.log10(A_guess) )
-            dict_add(init_dict, 'a_unif', np.log10(init_dict['flux']/self.Ndof_gauss) )
+            init_dict = dict_add(init_dict, 'flux', np.log10(A_guess) )
+            init_dict = dict_add(init_dict, 'a_unif', np.log10(init_dict['flux']/self.Ndof_gauss) )
             #set minimum possible weight value
-            dict_add(init_dict, 'a_min', -9)
+            init_dict = dict_add(init_dict, 'a_min', -9)
         else:
-            dict_add(init_dict, 'flux', A_guess )
-            dict_add(init_dict, 'a_unif', init_dict['flux']/self.Ndof_gauss )
-            dict_add(init_dict, 'a_min', 0)
+            init_dict = dict_add(init_dict, 'flux', A_guess )
+            print (init_dict)
+            init_dict = dict_add(init_dict, 'a_unif', init_dict['flux']/self.Ndof_gauss )
+            init_dict = dict_add(init_dict, 'a_min', 0)
 
         for i in range(self.Ndof_gauss):
             init_dict = dict_add(init_dict,'a%i'%i, init_dict['a_unif'] )
