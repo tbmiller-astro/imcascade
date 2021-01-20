@@ -104,6 +104,41 @@ class PSFFitter():
         prof[prof<= 1e-5] = 1e-5
         return np.log10(prof) - np.log10(y_data)
 
+    def fit_N(self, N,frac_cutoff = 1e-4, plot = False):
+        """ 'Fully' Fit a Multi Gaussian Model with a given number of gaussians
+        to the psf profile. Start with 1D to find the best fit widths and then
+        us 2D fit to find weights
+
+        Paramaters
+        ----------
+        N: Int
+            Number of gaussian to us in fit
+        Init guess: array, optional
+            Initial guess at parameters, if None will set Default based on N
+        frac_cutoff: float
+            Fraction of max, below which to not fit. This is done to focus
+            on the center of the PSF and not the edges. Important because
+            we using the log-residuals
+        Returns
+        -------
+        a_fit: 1-D array
+            Best fit Weights, corrected for oversamping
+        sig_fit: 1-D array
+            Best fit widths, corrected for oversamping
+        Chi2: Float
+            The overall chi squared of the fit, computed using the best fit 2D model
+"""
+        a_1d,sig_1d, chi2_1d = self.fit_1D(N,frac_cutoff = frac_cutoff)
+        fitter_cur = Fitter(self.psf_data, sig_1d, None,None, sky_model = False, log_weight_scale=False,verbose = False)
+        min_res = fitter_cur.run_ls_min()
+        a2D_cur = min_res.x[4:]
+        chi2_cur = fitter_cur.chi_sq(min_res.x)
+        if plot:
+
+
+
+        return sig_1d/fex.oversamp, a2D_cur/fex.oversamp**2, chi2_cur
+
     def fit_1D(self,N, init_guess = None,frac_cutoff = 1e-4):
         """ Fit a 1-D Multi Gaussian Model to the psf profile
 
@@ -120,9 +155,9 @@ class PSFFitter():
         Returns
         -------
         a_fit: 1-D array
-            Best fit Weights
+            Best fit Weights, Not corrected for oversampling
         sig_fit: 1-D array
-            Best fit widths
+            Best fit widths, Not corrected for oversampling
         Chi2: Float
             The overall chi squared of the fit
 """
