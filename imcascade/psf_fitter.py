@@ -133,10 +133,7 @@ class PSFFitter():
         min_res = fitter_cur.run_ls_min()
         a2D_cur = min_res.x[4:]
         chi2_cur = fitter_cur.chi_sq(min_res.x)
-        if plot:
-
-
-
+        
         return sig_1d/fex.oversamp, a2D_cur/fex.oversamp**2, chi2_cur
 
     def fit_1D(self,N, init_guess = None,frac_cutoff = 1e-4):
