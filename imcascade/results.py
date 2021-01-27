@@ -234,7 +234,7 @@ class ImcascadeResults():
             of each individual gaussian component
         norm: Bool (optional)
             Wether to normalize curves-of-growth to total flux, calculated using
-            'self.calc_flux'
+            'self.calc_flux'. Does nothing if 'return_ind = True'
         cutoff: Float (optional)
             Cutoff radius used in 'self.calc_flux', only is used if 'norm' is True
         Returns
@@ -249,13 +249,14 @@ class ImcascadeResults():
 
         cog_all = self.weights*( 1. - np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*self.sig**2)) )
         cog_all = cog_all.squeeze()
-        if norm:
-            cog_all /= self.calc_flux(cutoff = cutoff)
 
         if return_ind:
             return cog_all
         else:
-            return np.sum(cog_all, axis = -1)
+            if norm:
+                return np.sum(cog_all, axis = -1)/ self.calc_flux(cutoff = cutoff)
+            else:
+                return np.sum(cog_all, axis = -1)
 
     def run_basic_analysis(self, zpt = None, cutoff = None, errp_lo = 16, errp_hi =84,\
       save_results = False, save_file = './imcascade_results.asdf'):
