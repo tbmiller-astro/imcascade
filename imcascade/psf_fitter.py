@@ -43,7 +43,7 @@ class PSFFitter():
         r_in = np.arange(0, maxr - 1)
         r_out = np.arange(1,maxr)
         area = np.pi*(r_out**2 - r_in**2)
-        prof_sum,_,_ = sep.sum_circann(self.psf_data, cent_pix,cent_pix, r_in,r_out)
+        prof_sum,_,_ = sep.sum_circann(self.psf_data, [cent_pix]*len(r_in),[cent_pix]*len(r_in), r_in,r_out)
         self.intens = prof_sum/area
         self.radius = (r_in + r_out)/2.
         return self.intens, self.radius
@@ -129,12 +129,46 @@ class PSFFitter():
             The overall chi squared of the fit, computed using the best fit 2D model
 """
         a_1d,sig_1d, chi2_1d = self.fit_1D(N,frac_cutoff = frac_cutoff)
-        fitter_cur = Fitter(self.psf_data, sig_1d, None,None, sky_model = False, log_weight_scale=False,verbose = False)
+        fitter_cur = Fitter(self.psf_data, sig_1d, None,None, sky_model = False, log_weight_scale=False,verbose = False, init_dict = {'q':0.995}, bounds_dict = {'q':[0.99,1.]})
         min_res = fitter_cur.run_ls_min()
         a2D_cur = min_res.x[4:]
         chi2_cur = fitter_cur.chi_sq(min_res.x)
-        
-        return sig_1d/fex.oversamp, a2D_cur/fex.oversamp**2, chi2_cur
+        if plot:
+            import matplotlib.pyplot as plt
+            fig, (ax1,ax2,cax) = plt.subplots(1,3, figsize = (9,4), gridspec_kw={'width_ratios':[1.,1.,0.05,]})
+
+            ax1.plot(self.radius, np.log10(self.intens), 'C0-', lw = 2, label = '1D profile')
+
+            min_i = np.min(self.intens[self.intens > 0])
+            max_i = np.max(self.intens)
+            rplot = np.linspace(self.radius[0],self.radius[-1], num  = 200)
+            full_p = []
+            for i in range(N):
+                ax1.plot(rplot, np.log10(self.multi_gauss_1d(rplot, [a_1d[i],sig_1d[i]])), 'k--')
+                full_p.append(a_1d[i])
+                full_p.append(sig_1d[i])
+            ax1.plot(rplot, np.log10( self.multi_gauss_1d(rplot, full_p) ), 'k-', label = 'Best fit model')
+            ax1.set_ylim([np.log10(0.8*min_i), np.log10(2*max_i)])
+            ax1.set_ylabel('log ( Intensity)')
+            ax1.set_xlabel('Radius (pix)')
+            ax1.set_aspect(1./ax1.get_data_ratio())
+            ax1.legend(fontsize = 12, frameon = False)
+
+            mod = fitter_cur.make_model(min_res.x)
+            resid = (self.psf_data - mod)/mod
+
+            im2 = ax2.imshow(resid, vmin = -0.5, vmax = 0.5, cmap = 'RdGy')
+            ax2.axis('off')
+
+            ax2.set_title('Residual: (data-model)/model')
+
+            fig.colorbar(im2, cax=cax, orientation='vertical',fraction=0.046, pad=0.04)
+            fig.subplots_adjust(wspace = 0.01)
+
+            return sig_1d/self.oversamp, a2D_cur/self.oversamp**2, chi2_cur,fig
+
+        else:
+            return sig_1d/self.oversamp, a2D_cur/self.oversamp**2, chi2_cur
 
     def fit_1D(self,N, init_guess = None,frac_cutoff = 1e-4):
         """ Fit a 1-D Multi Gaussian Model to the psf profile

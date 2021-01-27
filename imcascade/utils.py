@@ -1,6 +1,24 @@
 import numpy as np
 from scipy.special import gamma
 import itertools
+from astropy.convolution import convolve, Gaussian2DKernel
+
+def guess_weights(sig, re, flux):
+    """ Method to guess the weights of the gaussian componenets given an re and flux.
+    Based on a polynomial fit to the exp fits of Hogg & Lang 2013
+"""
+    P = [-0.82022178, -2.74810102,  0.0210647,   0.50427881]
+    fitf = np.poly1d(P)
+    #Their findings are normalized to re
+    a_i = 10**fitf(np.log10(sig/re))
+    a_i = a_i /np.sum(a_i) *flux
+    return a_i
+
+def expand_mask(mask, radius = 5, threshold = 0.001):
+    mask_conv = convolve(mask, Gaussian2DKernel(radius) )
+    mask_conv[mask_conv>threshold] = 1
+    mask_conv[mask_conv<=threshold] = 0
+    return mask_conv
 
 def asinh_scale(start,end,num):
     temp = np.linspace(np.arcsinh(start), np.arcsinh(end), num = num )

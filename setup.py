@@ -10,6 +10,9 @@ setuptools.setup(
     author="Tim Miller",
     author_email="tim.miller@yale.edu",
     description="imcascade: a Non parametric framework for fitting astronomical sources in 2D using a 'cascade' of Gaussians",
+    entry_points = {
+    'console_scripts':['run_imcascade=imcascade.fitter:cli'],
+    },
     packages=setuptools.find_packages(),
     install_requires=INSTALL_REQUIRES,
     classifiers=[

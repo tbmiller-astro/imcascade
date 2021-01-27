@@ -1,11 +1,12 @@
 import numpy as np
 import asdf
+import logging
 from scipy.optimize import least_squares
 from scipy.stats import norm, truncnorm
 
 from imcascade.mgm import MultiGaussModel
 from imcascade.results import ImcascadeResults,vars_to_use
-from imcascade.utils import dict_add
+from imcascade.utils import dict_add, guess_weights
 import dynesty
 from dynesty import utils as dyfunc
 import emcee
@@ -32,7 +33,7 @@ class Fitter(MultiGaussModel):
     """A Class used fit images with MultiGaussModel"""
     def __init__(self, img, sig, psf_sig, psf_a, weight = None, mask = None,\
       sky_model = True,render_mode = 'erf', log_weight_scale = True, verbose = True,
-      init_dict = {}, bounds_dict = {}):
+      init_dict = {}, bounds_dict = {}, log_file = None):
         """Initialize a Task instance
         Paramaters
         ----------
@@ -77,6 +78,17 @@ class Fitter(MultiGaussModel):
 """
         self.img  = img
         self.verbose = verbose
+        log = logging.getLogger("imcascade fitter")
+        log.setLevel(logging.INFO)
+        if log_file is None:
+            handler = logging.StreamHandler()
+        else:
+            handler = logging.FileHandler(log_file)
+        formatter = logging.Formatter("%(asctime)s - %(message)s", "", "%")
+        handler.setFormatter(formatter)
+        log.addHandler(handler)
+        self.logger = log
+
         if weight is None:
             self.weight = np.ones(self.img.shape)
         else:
@@ -101,12 +113,6 @@ class Fitter(MultiGaussModel):
           verbose = verbose, sky_model = sky_model, render_mode = render_mode, \
           log_weight_scale = log_weight_scale)
 
-        #Measuring shape of img and w
-
-        #init_dict['x0'] = self.x_mid
-        #init_dict['y0'] = self.y_mid
-        #bounds_dict['x0'] = [init_dict['x0'] - 10, init_dict['x0'] + 10]
-        #bounds_dict['y0'] = [init_dict['y0'] - 10,init_dict['y0'] + 10]
 
         init_dict = dict_add(init_dict, 'x0',self.x_mid)
         init_dict = dict_add(init_dict, 'y0',self.y_mid)
@@ -146,22 +152,27 @@ class Fitter(MultiGaussModel):
 
         #Below assumes all gaussian have same A
         init_dict = dict_add(init_dict, 'flux', A_guess )
+        init_dict = dict_add(init_dict, 're', 5.)
+
+        a_guess = guess_weights(self.sig, init_dict['re'], init_dict['flux'])
 
         #If using log scale then adjust initial guesses
         if self.log_weight_scale:
-            init_dict = dict_add(init_dict, 'a_init', np.log10(init_dict['flux']/self.Ndof_gauss) )
             #set minimum possible weight value
             init_dict = dict_add(init_dict, 'a_max', np.log10(init_dict['flux']))
-            init_dict = dict_add(init_dict, 'a_min', -6)
-        else:
-            init_dict = dict_add(init_dict, 'flux', A_guess )
-            init_dict = dict_add(init_dict, 'a_init', init_dict['flux']/self.Ndof_gauss )
+            init_dict = dict_add(init_dict, 'a_min', init_dict['a_max'] - 5.)
+            a_guess[a_guess < init_dict['a_min']] = init_dict['a_min'] + 1
 
+        else:
             init_dict = dict_add(init_dict, 'a_max', init_dict['flux'])
             init_dict = dict_add(init_dict, 'a_min', 0)
+            a_guess[a_guess < init_dict['a_min']] = init_dict['a_min'] + 1e-3
 
         for i in range(self.Ndof_gauss):
-            init_dict = dict_add(init_dict,'a%i'%i, init_dict['a_init'] )
+            if self.log_weight_scale:
+                init_dict = dict_add(init_dict,'a%i'%i, np.log10(a_guess[i]) )
+            else:
+                init_dict = dict_add(init_dict,'a%i'%i, a_guess[i] )
             bounds_dict = dict_add(bounds_dict,'a%i'%i,  [init_dict['a_min'], init_dict['a_max'] ])
 
         #Now set initial and boundry values once defaults or inputs have been used
@@ -222,9 +233,12 @@ class Fitter(MultiGaussModel):
             along with error and status messages
             (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html)
 """
+        if self.verbose: self.logger.info('Running least squares minimization')
         min_res = least_squares(self.resid_1d, self.param_init, bounds = self.bnds, **ls_kwargs)
         self.min_res = min_res
         self.min_param = min_res.x
+        if self.verbose: self.logger.info('Finished least squares minimization')
+
         return min_res
 
     def set_up_express_run(self, set_params = None):
@@ -249,7 +263,6 @@ class Fitter(MultiGaussModel):
             phi = set_params[3]
         else:
             if not hasattr(self, 'min_res'):
-                if self.verbose: print ('Running least squares minimization')
                 self.run_ls_min()
 
             x0= self.min_res.x[0]
@@ -258,10 +271,10 @@ class Fitter(MultiGaussModel):
             phi = self.min_res.x[3]
 
         if self.verbose:
-            print ('Parameters to be set:')
-            print ('\t Galaxy Center: %.2f,%.2f'%(x0,y0) )
-            print ('\t Axis Ratio: %.5f'%q_in)
-            print ('\t PA: %.5f'%phi)
+            self.logger.info('Parameters to be set for express method:')
+            self.logger.info('\t Galaxy Center: %.2f,%.2f'%(x0,y0) )
+            self.logger.info('\t Axis Ratio: %.5f'%q_in)
+            self.logger.info('\t PA: %.5f'%phi)
 
         self.exp_set_params = np.array([x0,y0,q_in,phi])
 
@@ -449,19 +462,21 @@ class Fitter(MultiGaussModel):
         -------
         Posterier: Array
             Posterier distribution derrived. If method is 'express', the first 4 columns,
-            containg x0,y0,PA and q, are all the same and equal to values used to pre-rended the images
+            containg x0,y0,PA and q, are all the same and equal to values used to pre-render the images
 """
+        if self.verbose: self.logger.info('Running dynesty using the %s method'%method)
         if method == 'full':
             ndim = self.Ndof
             sampler = dynesty.DynamicNestedSampler( self.log_like, self.ptform, ndim= ndim, **sampler_kwargs)
         if method == 'express':
             ndim = self.Ndof_gauss + self.Ndof_sky
             if not hasattr(self, 'express_gauss_arr'):
-                if self.verbose: print ('Setting up Express params')
+                if self.verbose: self.logger.info('Setting up Express params')
                 _ = self.set_up_express_run()
             sampler = dynesty.DynamicNestedSampler( self.log_like_exp, self.ptform_exp, ndim= ndim, **sampler_kwargs)
         sampler.run_nested(**run_nested_kwargs)
 
+        if self.verbose: self.logger.info('Finished running dynesty, calculating posterier')
         self.dynesty_sampler = sampler
         res_cur = sampler.results
         dyn_samples, dyn_weights = res_cur.samples, np.exp(res_cur.logwt - res_cur.logz[-1])
@@ -553,11 +568,18 @@ class Fitter(MultiGaussModel):
             containg x0,y0,PA and q, are all the same and equal to values used to pre-rended the images
 """
         if run_basic_analysis:
+            if self.verbose: self.logger.info('Saving results to: %s'%file_name)
+            if self.verbose: self.logger.info('Running basic morphological analysis')
+
             res = ImcascadeResults(self, thin_posterier = thin_posterier)
-            res.run_basic_analysis(zpt = zpt, cutoff = cutoff, errp_lo = errp_lo, errp_hi =errp_hi,\
+            res_dict = res.run_basic_analysis(zpt = zpt, cutoff = cutoff, errp_lo = errp_lo, errp_hi =errp_hi,\
               save_results = True , save_file = file_name)
+            if self.verbose:
+                for key in res_dict:
+                    self.logger.info('%s = '%(key) + str(res_dict[key]))
             return res
         else:
+            if self.verbose: self.logger.info('Saving results to: %s'%file_name)
             #If analysis is not to be run then simply save the important contents of the class
             dict_to_save = {}
             for key in vars_to_use:
@@ -570,3 +592,13 @@ class Fitter(MultiGaussModel):
             file.write_to(file_name)
 
             return dict_to_save
+#To be expanded upon
+def cli():
+    import argparse
+    import yaml
+
+    parser = argparse.ArgumentParser(description='Run imcascade from the terminal')
+    parser.add_argument('-config', type=str,help="string containing the location of the config file")
+
+    args = parser.parse_args()
+    print (args.config)
