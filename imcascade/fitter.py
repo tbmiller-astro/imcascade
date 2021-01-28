@@ -172,7 +172,7 @@ class Fitter(MultiGaussModel):
                 a_guess_cur = init_dict['flux']/1e4
 
             if self.log_weight_scale:
-                init_dict = dict_add(init_dict,'a%i'%i, np.log10(a_guess_cur )
+                init_dict = dict_add(init_dict,'a%i'%i, np.log10(a_guess_cur ) )
             else:
                 init_dict = dict_add(init_dict,'a%i'%i, a_guess_cur )
             bounds_dict = dict_add(bounds_dict,'a%i'%i,  [init_dict['a_min'], init_dict['a_max'] ])
