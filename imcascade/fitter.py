@@ -161,18 +161,20 @@ class Fitter(MultiGaussModel):
             #set minimum possible weight value
             init_dict = dict_add(init_dict, 'a_max', np.log10(init_dict['flux']))
             init_dict = dict_add(init_dict, 'a_min', init_dict['a_max'] - 5.)
-            a_guess[a_guess < init_dict['a_min']] = init_dict['a_min'] + 1
 
         else:
             init_dict = dict_add(init_dict, 'a_max', init_dict['flux'])
             init_dict = dict_add(init_dict, 'a_min', 0)
-            a_guess[a_guess < init_dict['a_min']] = init_dict['a_min'] + 1e-3
 
         for i in range(self.Ndof_gauss):
+            a_guess_cur = a_guess[i]
+            if a_guess_cur < init_dict['flux']/1e5:
+                a_guess_cur = init_dict['flux']/1e4
+
             if self.log_weight_scale:
-                init_dict = dict_add(init_dict,'a%i'%i, np.log10(a_guess[i]) )
+                init_dict = dict_add(init_dict,'a%i'%i, np.log10(a_guess_cur )
             else:
-                init_dict = dict_add(init_dict,'a%i'%i, a_guess[i] )
+                init_dict = dict_add(init_dict,'a%i'%i, a_guess_cur )
             bounds_dict = dict_add(bounds_dict,'a%i'%i,  [init_dict['a_min'], init_dict['a_max'] ])
 
         #Now set initial and boundry values once defaults or inputs have been used
