@@ -100,7 +100,7 @@ class Fitter(MultiGaussModel):
         if mask is not None:
             if self.weight.shape != self.img.shape:
                 raise ValueError("'mask' array must have same shape as 'img' ")
-            self.weight[mask] = 0
+            self.weight[np.where(mask == 1)] = 0
             self.mask = mask
         else:
             self.mask = np.zeros(self.img.shape)
