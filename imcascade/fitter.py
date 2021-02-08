@@ -16,7 +16,7 @@ def FitterFromASDF(file_name, init_dict= {}, bounds_dict = {}):
     dict = af.tree.copy()
 
     keys_for_func = ['weight','mask','sky_model','render_mode','log_weight_scale',
-    'verbose']
+    'verbose', 'log_file']
     kwargs = {}
     for key in dict:
         if key in keys_for_func:

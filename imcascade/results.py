@@ -15,7 +15,7 @@ def calc_flux_input(weights,sig, cutoff = None):
 def r_root_func(r,f_L, weights,sig,cutoff):
     return f_L - np.sum(weights*(1. - np.exp(-1.*r**2 / (2*sig**2)) ),axis = -1 ) / calc_flux_input(weights,sig,cutoff = cutoff)
 
-vars_to_use = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss', 'has_psf', 'psf_a','psf_sig', 'log_weight_scale','min_param','sky_model', 'posterier', 'post_method']
+vars_to_use = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss', 'has_psf', 'psf_a','psf_sig', 'log_weight_scale','min_param','sky_model', 'posterier', 'post_method','log_file']
 
 class ImcascadeResults():
     """A class used for collating imcascade results and performing analysis"""
