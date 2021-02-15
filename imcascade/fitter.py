@@ -78,16 +78,15 @@ class Fitter(MultiGaussModel):
 """
         self.img  = img
         self.verbose = verbose
-        log = logging.getLogger("imcascade fitter")
-        log.setLevel(logging.INFO)
+
         if log_file is None:
             handler = logging.StreamHandler()
         else:
             handler = logging.FileHandler(log_file)
-        formatter = logging.Formatter("%(asctime)s - %(message)s", "", "%")
-        handler.setFormatter(formatter)
-        log.addHandler(handler)
-        self.logger = log
+
+        logging.basicConfig(format = "%(asctime)s - %(message)s", level = logging.INFO,
+            handlers = [handler,])
+        self.logger = logging.getLogger()
 
         if weight is None:
             self.weight = np.ones(self.img.shape)

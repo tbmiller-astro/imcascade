@@ -102,12 +102,12 @@ class ImcascadeResults():
         Paramaters
         ----------
         X: float
-            Fractional radius of intrest to calculate. if X < 1 will take as Fraction,
+            Fractional radius of intrest to calculate. if X < 1 will take as a fraction,
             else will interpret as percent and divide X by 100. i.e. to calculate
             the radius containing 20% of the light, once can either pass X = 20 or 0.2
         cutoff: float (optional)
             Radius out to which to consider the profile. Generally this should be
-            around the half-width of the image or the largest gaussian width use
+            around the half-width of the image or the largest gaussian width used
         Returns
         -------
         r_X: float or Array
@@ -152,7 +152,7 @@ class ImcascadeResults():
         Returns
         -------
         r_80: float or Array
-            The radius containg 90 percent of the light
+            The radius containg 80 percent of the light
 """
         r80_cur = self.calc_rX(80., cutoff = cutoff)
         self.r80 = r80_cur
@@ -170,7 +170,7 @@ class ImcascadeResults():
         Returns
         -------
         r_50: float or Array
-            The radius containg 90 percent of the light
+            The radius containg 50 percent of the light
 """
         r50_cur = self.calc_rX(50., cutoff = cutoff)
         self.r50 = r50_cur
@@ -187,7 +187,7 @@ class ImcascadeResults():
         Returns
         -------
         r_20: float or Array
-            The radius containg 90 percent of the light
+            The radius containg 20 percent of the light
 """
         r20_cur = self.calc_rX(20., cutoff = cutoff)
         self.r20 = r20_cur
@@ -214,7 +214,7 @@ class ImcascadeResults():
         if type(r) == float:
             r = np.array([r,])
 
-        prof_all = self.weights/(2*np.pi*self.sig**2) * np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*self.sig**2))
+        prof_all = self.weights/(2*np.pi*self.q[:,np.newaxis]*self.sig**2) * np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*self.sig**2))
         prof_all = prof_all.squeeze()
 
         if return_ind:
@@ -223,7 +223,7 @@ class ImcascadeResults():
             return np.sum(prof_all, axis = -1)
 
     def calc_cog(self, r, return_ind = False, norm = False, cutoff = None):
-        """Function to calculate curves-of0growth for the given results
+        """Function to calculate curves-of-growth for the given results
         Paramaters
         ----------
         r: float or array
