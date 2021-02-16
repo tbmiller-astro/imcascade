@@ -126,20 +126,24 @@ class Fitter(MultiGaussModel):
 
         if sky_model:
             #Try to make educated guesses about sky model
-            sky0_guess = np.median(self.img[np.where(self.mask == 0)])
+            sky0_guess = np.nanmedian(self.img[np.where(self.mask == 0)])
+            if np.isnan(sky0_guess):
+                sky0_guess = 0
             init_dict = dict_add(init_dict, 'sky0', sky0_guess)
             bounds_dict = dict_add(bounds_dict, 'sky0', [-np.abs(sky0_guess)*5, np.abs(sky0_guess)*5])
 
             #estimate X and Y slopes using edges
             use_x_edge = np.where(self.mask[:,-1]*self.mask[:,0] == 0)
-            sky1_guess = np.median(self.img[:,1][use_x_edge] - img[:,0][use_x_edge])/img.shape[0]
-
+            sky1_guess = np.nanmedian(self.img[:,1][use_x_edge] - img[:,0][use_x_edge])/img.shape[0]
+            if np.isnan(sky1_guess):
+                sky1_guess = 0
             init_dict = dict_add(init_dict, 'sky1', sky1_guess)
             bounds_dict = dict_add(bounds_dict, 'sky1', [-np.abs(sky1_guess)*5, np.abs(sky1_guess)*5])
 
             use_y_edge = np.where(self.mask[-1,:]*self.mask[0,:] == 0)
-            sky2_guess = np.median(self.img[-1,:][use_y_edge] - img[0,:][use_y_edge])/img.shape[1]
-
+            sky2_guess = np.nanmedian(self.img[-1,:][use_y_edge] - img[0,:][use_y_edge])/img.shape[1]
+            if np.isnan(sky2_guess):
+                sky2_guess = 0
             init_dict = dict_add(init_dict, 'sky2', sky2_guess)
             bounds_dict = dict_add(bounds_dict, 'sky2', [-np.abs(sky2_guess)*5, np.abs(sky2_guess)*5])
 
