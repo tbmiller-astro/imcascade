@@ -129,7 +129,7 @@ class PSFFitter():
             The overall chi squared of the fit, computed using the best fit 2D model
 """
         a_1d,sig_1d, chi2_1d = self.fit_1D(N,frac_cutoff = frac_cutoff)
-        fitter_cur = Fitter(self.psf_data, sig_1d, None,None, sky_model = False, log_weight_scale=False,verbose = False, init_dict = {'q':0.995, 'pa':0}, bounds_dict = {'q':[0.99,1.], 'pa':[-0.01,0.01]},)
+        fitter_cur = Fitter(self.psf_data, sig_1d, None,None, sky_model = False, log_weight_scale=False,verbose = False, init_dict = {'q':0.995, 'phi':0}, bounds_dict = {'q':[0.99,1.], 'phi':[-0.01,0.01]},)
         min_res = fitter_cur.run_ls_min()
         a2D_cur = min_res.x[4:]
         chi2_cur = fitter_cur.chi_sq(min_res.x)

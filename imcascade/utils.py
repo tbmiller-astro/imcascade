@@ -4,7 +4,7 @@ import itertools
 from astropy.convolution import convolve, Gaussian2DKernel
 
 def guess_weights(sig, re, flux):
-    """ Method to guess the weights of the gaussian componenets given an re and flux.
+    """ Method to guess the weights of gaussian componenets given an re and flux.
     Based on a polynomial fit to the exp fits of Hogg & Lang 2013
 """
     P = [-0.82022178, -2.74810102,  0.0210647,   0.50427881]

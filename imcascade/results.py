@@ -214,7 +214,12 @@ class ImcascadeResults():
         if type(r) == float:
             r = np.array([r,])
 
-        prof_all = self.weights/(2*np.pi*self.q[:,np.newaxis]*self.sig**2) * np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*self.sig**2))
+        if np.isscalar(self.q):
+            q_use = np.array([ self.q, ])
+        else:
+            q_use = np.copy(self.q)
+
+        prof_all = self.weights/(2*np.pi*q_use[:,np.newaxis]*self.sig**2) * np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*self.sig**2))
         prof_all = prof_all.squeeze()
 
         if return_ind:
