@@ -89,10 +89,15 @@ class Fitter(MultiGaussModel):
         self.logger = logging.getLogger()
 
         if weight is None:
-            self.weight = np.ones(self.img.shape)
+            self.weight = 1.
+            self.mean_weight = 1.
+            self.sum_weight = 1.
+            self.avg_noise = 1.
         else:
             self.weight = weight
-
+            self.mean_weight = np.mean(self.weight[self.weight>0])
+            self.sum_weight = np.sum(self.weight[self.weight>0])
+            self.avg_noise = np.mean(1./np.sqrt(self.weight[self.weight>0]))
         if self.weight.shape != self.img.shape:
             raise ValueError("'weight' array must have same shape as 'img'")
 
@@ -104,9 +109,7 @@ class Fitter(MultiGaussModel):
         else:
             self.mask = np.zeros(self.img.shape)
 
-        self.mean_weight = np.mean(self.weight[self.weight>0])
-        self.sum_weight = np.sum(self.weight[self.weight>0])
-        self.avg_noise = np.mean(1./np.sqrt(self.weight[self.weight>0]))
+
 
         MultiGaussModel.__init__(self,self.img.shape,sig, psf_sig, psf_a, \
           verbose = verbose, sky_model = sky_model, render_mode = render_mode, \

@@ -129,7 +129,16 @@ class PSFFitter():
             The overall chi squared of the fit, computed using the best fit 2D model
 """
         a_1d,sig_1d, chi2_1d = self.fit_1D(N,frac_cutoff = frac_cutoff)
-        fitter_cur = Fitter(self.psf_data, sig_1d, None,None, sky_model = False, log_weight_scale=False,verbose = False, init_dict = {'q':0.995, 'phi':0}, bounds_dict = {'q':[0.99,1.], 'phi':[-0.01,0.01]},)
+
+        tow = np.copy(pfit.psf_data)
+        tow[np.where(tow< 0)] = 0
+        eps = 1e-4
+        w = 1/ (tow + eps)
+        w[np.where(np.isinf(w))] = 0
+        w[np.where(np.isnan(w))] = 0
+
+        fitter_cur = Fitter(self.psf_data, sig_1d, None,None, weight = w, sky_model = False, log_weight_scale=False,
+             verbose = False, init_dict = {'q':0.995, 'phi':0}, bounds_dict={'q':[0.99,1], 'phi':[-1e-4,1e-4]})
         min_res = fitter_cur.run_ls_min()
         a2D_cur = min_res.x[4:]
         chi2_cur = fitter_cur.chi_sq(min_res.x)
@@ -204,7 +213,7 @@ class PSFFitter():
         self.ls_res = ls_res_cur
         a_fit = ls_res_cur.x[::2]
         sig_fit = ls_res_cur.x[1::2]
-        return a_fit, sig_fit, np.sum((ls_res_cur.fun)**2)
+        return a_fit*sig_fit*np.sqrt(2*np.pi), sig_fit, np.sum((ls_res_cur.fun)**2)
 
     def auto_fit(self, N_max = 5, frac_cutoff = 1e-4,norm_a = True, show_fig = True):
         """ Function used for automatic fitting of PSF. First using a 1-D fit to find
@@ -234,25 +243,20 @@ class PSFFitter():
         sig_min = 0
         a2D_min = 0
         for num_fit in range(1,N_max+1):
-            a_cur,sig_cur,chi2_1d_cur = self.fit_1D(num_fit, frac_cutoff = frac_cutoff)
+            a_cur,sig_cur,chi2_cur = self.fit_N(num_fit, frac_cutoff = frac_cutoff)
             if min_diff_array(sig_cur) < 1.5:
                 print ( "Skipping %i, two sigma's close together"%num_fit)
                 continue
-            psf_task = Fitter(self.psf_data,sig_cur, None,None, sky_model = False, log_weight_scale=False,verbose = False)
-            min_res = psf_task.run_ls_min()
-            a2D_cur = min_res.x[4:]
-            chi2_cur = psf_task.chi_sq(min_res.x)
 
             print (num_fit, '%.3e'%chi2_cur )
             if chi2_cur < chi2_min:
-                a1D_min = a_cur
+                a_min = a_cur
                 sig_min = sig_cur
                 chi2_min = chi2_cur
                 num_min = num_fit
-                a2D_min = a2D_cur
         #Add Show fig
 
         if norm_a:
-            return sig_min / self.oversamp, a2D_min / np.sum(a2D_min)
+            return sig_min / self.oversamp, a_min / np.sum(a_min)
         else:
-            return sig_min / self.oversamp, a2D_min / self.oversamp**2
+            return sig_min / self.oversamp, a_min / self.oversamp**2
