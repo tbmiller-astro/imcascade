@@ -244,7 +244,7 @@ class PSFFitter():
         a2D_min = 0
         for num_fit in range(1,N_max+1):
             a_cur,sig_cur,chi2_cur = self.fit_N(num_fit, frac_cutoff = frac_cutoff)
-            if min_diff_array(sig_cur) < 1.5:
+            if min_diff_array(sig_cur) < 0.75:
                 print ( "Skipping %i, two sigma's close together"%num_fit)
                 continue
 

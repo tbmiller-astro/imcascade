@@ -54,7 +54,7 @@ class MultiGaussModel():
         self.y_mid = shape[1]/2.
         x_pix = np.arange(0,shape[0])
         y_pix = np.arange(0,shape[1])
-        X,Y = np.meshgrid(x_pix,y_pix)
+        X,Y = np.meshgrid(x_pix,y_pix, indexing = 'ij')
         self.X = X
         self.Y = Y
 
