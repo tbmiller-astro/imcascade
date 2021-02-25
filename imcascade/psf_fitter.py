@@ -130,7 +130,7 @@ class PSFFitter():
 """
         a_1d,sig_1d, chi2_1d = self.fit_1D(N,frac_cutoff = frac_cutoff)
 
-        tow = np.copy(pfit.psf_data)
+        tow = np.copy(self.psf_data)
         tow[np.where(tow< 0)] = 0
         eps = 1e-4
         w = 1/ (tow + eps)
