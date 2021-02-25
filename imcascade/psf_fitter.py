@@ -213,7 +213,7 @@ class PSFFitter():
         self.ls_res = ls_res_cur
         a_fit = ls_res_cur.x[::2]
         sig_fit = ls_res_cur.x[1::2]
-        return a_fit*sig_fit*np.sqrt(2*np.pi), sig_fit, np.sum((ls_res_cur.fun)**2)
+        return a_fit, sig_fit, np.sum((ls_res_cur.fun)**2)
 
     def auto_fit(self, N_max = 5, frac_cutoff = 1e-4,norm_a = True, show_fig = True):
         """ Function used for automatic fitting of PSF. First using a 1-D fit to find
