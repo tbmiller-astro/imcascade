@@ -166,7 +166,7 @@ class PSFFitter():
             ax1.set_aspect(1./ax1.get_data_ratio())
             ax1.legend(fontsize = 12, frameon = False)
 
-            mod = fitter_cur.make_model(min_res.x)
+            mod = fitter_cur.make_model(param)
             resid = (self.psf_data - mod)/mod
 
             im2 = ax2.imshow(resid, vmin = -0.5, vmax = 0.5, cmap = 'RdGy')
