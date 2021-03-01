@@ -38,12 +38,13 @@ class PSFFitter():
         radius:
             radii at which the intensity measuremnts are made
 """
-        cent_pix = self.psf_data.shape[0]/2.
-        maxr = int(cent_pix)
+        cent_pix_x = self.psf_data.shape[0]/2.
+        cent_pix_y = self.psf_data.shape[1]/2.
+        maxr = int(np.min([cent_pix_x,cent_pix_y]) )
         r_in = np.arange(0, maxr - 1)
         r_out = np.arange(1,maxr)
         area = np.pi*(r_out**2 - r_in**2)
-        prof_sum,_,_ = sep.sum_circann(self.psf_data, [cent_pix]*len(r_in),[cent_pix]*len(r_in), r_in,r_out)
+        prof_sum,_,_ = sep.sum_circann(self.psf_data, [cent_pix_x]*len(r_in),[cent_pix_y]*len(r_in), r_in,r_out)
         self.intens = prof_sum/area
         self.radius = (r_in + r_out)/2.
         return self.intens, self.radius
@@ -107,7 +108,7 @@ class PSFFitter():
     def fit_N(self, N,frac_cutoff = 1e-4, plot = False):
         """ 'Fully' Fit a Multi Gaussian Model with a given number of gaussians
         to the psf profile. Start with 1D to find the best fit widths and then
-        us 2D fit to find weights
+        us evaluate chi2 in 2D
 
         Paramaters
         ----------
@@ -129,7 +130,7 @@ class PSFFitter():
             The overall chi squared of the fit, computed using the best fit 2D model
 """
         a_1d,sig_1d, chi2_1d = self.fit_1D(N,frac_cutoff = frac_cutoff)
-
+        a2D_cur = a_1d*sig_1d*np.sqrt(2*np.pi)
         tow = np.copy(self.psf_data)
         tow[np.where(tow< 0)] = 0
         eps = 1e-4
@@ -138,10 +139,12 @@ class PSFFitter():
         w[np.where(np.isnan(w))] = 0
 
         fitter_cur = Fitter(self.psf_data, sig_1d, None,None, weight = w, sky_model = False, log_weight_scale=False,
-             verbose = False, init_dict = {'q':0.995, 'phi':0}, bounds_dict={'q':[0.99,1], 'phi':[-1e-4,1e-4]})
-        min_res = fitter_cur.run_ls_min()
-        a2D_cur = min_res.x[4:]
-        chi2_cur = fitter_cur.chi_sq(min_res.x)
+             verbose = False, init_dict = {'q':1, 'phi':0}, bounds_dict={'q':[0.99,1.01], 'phi':[-1e-4,1e-4]})
+        #min_res = fitter_cur.run_ls_min()
+        #a2D_cur = min_res.x[4:]
+        param = np.copy(fitter_cur.param_init)
+        param[4:] = a2D_cur
+        chi2_cur = fitter_cur.chi_sq(param)
         if plot:
             import matplotlib.pyplot as plt
             fig, (ax1,ax2,cax) = plt.subplots(1,3, figsize = (9,4), gridspec_kw={'width_ratios':[1.,1.,0.05,]})
