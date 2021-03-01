@@ -27,7 +27,7 @@ class PSFFitter():
         self.oversamp = oversamp
 
         self.cent_pix_x = np.where(self.psf_data == np.max(self.psf_data) )[1][0]
-        self.cent_pix_y = np.where(self.psf_data == np.max(self.psf_data) )[1][0]
+        self.cent_pix_y = np.where(self.psf_data == np.max(self.psf_data) )[0][0]
 
         #calculate 1-D circular profile
         _,_ = self.calc_profile()
