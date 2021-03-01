@@ -26,6 +26,9 @@ class PSFFitter():
             self.psf_data = np.array(psf_img, dtype = '<f4')
         self.oversamp = oversamp
 
+        self.cent_pix_x = np.where(self.psf_data == np.max(self.psf_data) )[1][0]
+        self.cent_pix_y = np.where(self.psf_data == np.max(self.psf_data) )[1][0]
+
         #calculate 1-D circular profile
         _,_ = self.calc_profile()
 
@@ -38,13 +41,12 @@ class PSFFitter():
         radius:
             radii at which the intensity measuremnts are made
 """
-        cent_pix_x = self.psf_data.shape[0]/2.
-        cent_pix_y = self.psf_data.shape[1]/2.
-        maxr = int(np.min([cent_pix_x,cent_pix_y]) )
+
+        maxr = int(np.min([self.cent_pix_x,self.cent_pix_y]) )
         r_in = np.arange(0, maxr - 1)
         r_out = np.arange(1,maxr)
         area = np.pi*(r_out**2 - r_in**2)
-        prof_sum,_,_ = sep.sum_circann(self.psf_data, [cent_pix_x]*len(r_in),[cent_pix_y]*len(r_in), r_in,r_out)
+        prof_sum,_,_ = sep.sum_circann(self.psf_data, [self.cent_pix_x]*len(r_in),[self.cent_pix_y]*len(r_in), r_in,r_out)
         self.intens = prof_sum/area
         self.radius = (r_in + r_out)/2.
         return self.intens, self.radius
@@ -139,7 +141,7 @@ class PSFFitter():
         w[np.where(np.isnan(w))] = 0
 
         fitter_cur = Fitter(self.psf_data, sig_1d, None,None, weight = w, sky_model = False, log_weight_scale=False,
-             verbose = False, init_dict = {'q':1, 'phi':0}, bounds_dict={'q':[0.99,1.01], 'phi':[-1e-4,1e-4]})
+             verbose = False, init_dict = {'x0':self.cent_pix_x, 'y0': self.cent_pix_y, 'q':1, 'phi':0}, bounds_dict={'q':[0.99,1.01], 'phi':[-1e-4,1e-4]})
         #min_res = fitter_cur.run_ls_min()
         #a2D_cur = min_res.x[4:]
         param = np.copy(fitter_cur.param_init)
