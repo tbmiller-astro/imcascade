@@ -26,9 +26,6 @@ class PSFFitter():
             self.psf_data = np.array(psf_img, dtype = '<f4')
         self.oversamp = oversamp
 
-        self.cent_pix_x = np.where(self.psf_data == np.max(self.psf_data) )[0][0]
-        self.cent_pix_y = np.where(self.psf_data == np.max(self.psf_data) )[1][0]
-
         #calculate 1-D circular profile
         _,_ = self.calc_profile()
 
@@ -41,12 +38,12 @@ class PSFFitter():
         radius:
             radii at which the intensity measuremnts are made
 """
-
-        maxr = int(np.min([self.cent_pix_x,self.cent_pix_y]) )
+        cent_pix = self.psf_data.shape[0]/2.
+        maxr = int(cent_pix)
         r_in = np.arange(0, maxr - 1)
         r_out = np.arange(1,maxr)
         area = np.pi*(r_out**2 - r_in**2)
-        prof_sum,_,_ = sep.sum_circann(self.psf_data, [self.cent_pix_x+0.5]*len(r_in),[self.cent_pix_y+0.5]*len(r_in), r_in,r_out)
+        prof_sum,_,_ = sep.sum_circann(self.psf_data, cent_pix,cent_pix, r_in,r_out)
         self.intens = prof_sum/area
         self.radius = (r_in + r_out)/2.
         return self.intens, self.radius
@@ -110,7 +107,7 @@ class PSFFitter():
     def fit_N(self, N,frac_cutoff = 1e-4, plot = False):
         """ 'Fully' Fit a Multi Gaussian Model with a given number of gaussians
         to the psf profile. Start with 1D to find the best fit widths and then
-        us evaluate chi2 in 2D
+        us 2D fit to find weights
 
         Paramaters
         ----------
@@ -132,57 +129,15 @@ class PSFFitter():
             The overall chi squared of the fit, computed using the best fit 2D model
 """
         a_1d,sig_1d, chi2_1d = self.fit_1D(N,frac_cutoff = frac_cutoff)
-        a2D_cur = a_1d*sig_1d*np.sqrt(2*np.pi)
-        tow = np.copy(self.psf_data)
-        tow[np.where(tow< 0)] = 0
-        eps = 1e-4
-        w = 1/ (tow + eps)
-        w[np.where(np.isinf(w))] = 0
-        w[np.where(np.isnan(w))] = 0
-
-        fitter_cur = Fitter(self.psf_data, sig_1d, None,None, weight = w, sky_model = False, log_weight_scale=False,
-             verbose = False, render_mode = 'erf', init_dict = {'x0':self.cent_pix_x, 'y0': self.cent_pix_y, 'q':1, 'phi':0}, bounds_dict={'q':[0.99,1.01], 'phi':[-1e-4,1e-4]})
-        #min_res = fitter_cur.run_ls_min()
-        #a2D_cur = min_res.x[4:]
-        param = np.copy(fitter_cur.param_init)
-        param[4:] = a2D_cur
-        chi2_cur = fitter_cur.chi_sq(param)
+        fitter_cur = Fitter(self.psf_data, sig_1d, None,None, sky_model = False, log_weight_scale=False,verbose = False)
+        min_res = fitter_cur.run_ls_min()
+        a2D_cur = min_res.x[4:]
+        chi2_cur = fitter_cur.chi_sq(min_res.x)
         if plot:
-            import matplotlib.pyplot as plt
-            fig, (ax1,ax2,cax) = plt.subplots(1,3, figsize = (9,4), gridspec_kw={'width_ratios':[1.,1.,0.05,]})
 
-            ax1.plot(self.radius, np.log10(self.intens), 'C0-', lw = 2, label = '1D profile')
 
-            min_i = np.min(self.intens[self.intens > 0])
-            max_i = np.max(self.intens)
-            rplot = np.linspace(self.radius[0],self.radius[-1], num  = 200)
-            full_p = []
-            for i in range(N):
-                ax1.plot(rplot, np.log10(self.multi_gauss_1d(rplot, [a_1d[i],sig_1d[i]])), 'k--')
-                full_p.append(a_1d[i])
-                full_p.append(sig_1d[i])
-            ax1.plot(rplot, np.log10( self.multi_gauss_1d(rplot, full_p) ), 'k-', label = 'Best fit model')
-            ax1.set_ylim([np.log10(0.8*min_i), np.log10(2*max_i)])
-            ax1.set_ylabel('log ( Intensity)')
-            ax1.set_xlabel('Radius (pix)')
-            ax1.set_aspect(1./ax1.get_data_ratio())
-            ax1.legend(fontsize = 12, frameon = False)
 
-            mod = fitter_cur.make_model(param)
-            resid = (self.psf_data - mod)/mod
-
-            im2 = ax2.imshow(resid, vmin = -0.5, vmax = 0.5, cmap = 'RdGy')
-            ax2.axis('off')
-
-            ax2.set_title('Residual: (data-model)/model')
-
-            fig.colorbar(im2, cax=cax, orientation='vertical',fraction=0.046, pad=0.04)
-            fig.subplots_adjust(wspace = 0.01)
-
-            return sig_1d/self.oversamp, a2D_cur/self.oversamp**2, chi2_cur,fig
-
-        else:
-            return sig_1d/self.oversamp, a2D_cur/self.oversamp**2, chi2_cur
+        return sig_1d/fex.oversamp, a2D_cur/fex.oversamp**2, chi2_cur
 
     def fit_1D(self,N, init_guess = None,frac_cutoff = 1e-4):
         """ Fit a 1-D Multi Gaussian Model to the psf profile
@@ -248,20 +203,25 @@ class PSFFitter():
         sig_min = 0
         a2D_min = 0
         for num_fit in range(1,N_max+1):
-            a_cur,sig_cur,chi2_cur = self.fit_N(num_fit, frac_cutoff = frac_cutoff)
-            if min_diff_array(sig_cur) < 0.75:
+            a_cur,sig_cur,chi2_1d_cur = self.fit_1D(num_fit, frac_cutoff = frac_cutoff)
+            if min_diff_array(sig_cur) < 1.5:
                 print ( "Skipping %i, two sigma's close together"%num_fit)
                 continue
+            psf_task = Fitter(self.psf_data,sig_cur, None,None, sky_model = False, log_weight_scale=False,verbose = False)
+            min_res = psf_task.run_ls_min()
+            a2D_cur = min_res.x[4:]
+            chi2_cur = psf_task.chi_sq(min_res.x)
 
             print (num_fit, '%.3e'%chi2_cur )
             if chi2_cur < chi2_min:
-                a_min = a_cur
+                a1D_min = a_cur
                 sig_min = sig_cur
                 chi2_min = chi2_cur
                 num_min = num_fit
+                a2D_min = a2D_cur
         #Add Show fig
 
         if norm_a:
-            return sig_min / self.oversamp, a_min / np.sum(a_min)
+            return sig_min / self.oversamp, a2D_min / np.sum(a2D_min)
         else:
-            return sig_min / self.oversamp, a_min / self.oversamp**2
+            return sig_min / self.oversamp, a2D_min / self.oversamp**2

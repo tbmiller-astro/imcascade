@@ -1,0 +1,7 @@
+numpy
+scipy
+asdf
+emcee
+dynesty
+astropy
+sep
