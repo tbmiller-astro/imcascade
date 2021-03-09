@@ -54,7 +54,7 @@ class Fitter(MultiGaussModel):
             Array with the same shape as 'img' denoting which, if any, pixels
             to mask  during fitting process. Values of '1' or 'True' values for
             the pixels to be masked. If set to 'None' then will not mask any
-            pixels.In practice, the weights of masked pixels is set to '0'.
+            pixels. In practice, the weights of masked pixels is set to '0'.
         sky_model: bool, optional
             If True will incorperate a tilted plane sky model. Reccomended to be set
             to True
@@ -487,6 +487,8 @@ class Fitter(MultiGaussModel):
         if self.verbose: self.logger.info('Finished running dynesty, calculating posterier')
         self.dynesty_sampler = sampler
         res_cur = sampler.results
+        self.logz = res_cur.logz[-1]
+        self.logz_err = res_cur.logzerr[-1]
         dyn_samples, dyn_weights = res_cur.samples, np.exp(res_cur.logwt - res_cur.logz[-1])
         post_samp = dyfunc.resample_equal(dyn_samples, dyn_weights)
 

@@ -15,7 +15,9 @@ def calc_flux_input(weights,sig, cutoff = None):
 def r_root_func(r,f_L, weights,sig,cutoff):
     return f_L - np.sum(weights*(1. - np.exp(-1.*r**2 / (2*sig**2)) ),axis = -1 ) / calc_flux_input(weights,sig,cutoff = cutoff)
 
-vars_to_use = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss', 'has_psf', 'psf_a','psf_sig', 'log_weight_scale','min_param','sky_model', 'posterier', 'post_method','log_file']
+vars_to_use = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss',
+ 'has_psf', 'psf_a','psf_sig', 'log_weight_scale','min_param','sky_model',
+ 'posterier', 'post_method','log_file', 'logz','logz_err']
 
 class ImcascadeResults():
     """A class used for collating imcascade results and performing analysis"""
@@ -220,6 +222,57 @@ class ImcascadeResults():
             q_use = np.copy(self.q)
 
         prof_all = self.weights/(2*np.pi*q_use[:,np.newaxis]*self.sig**2) * np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*self.sig**2))
+        prof_all = prof_all.squeeze()
+
+        if return_ind:
+            return prof_all
+        else:
+            return np.sum(prof_all, axis = -1)
+
+    def calc_obs_sbp(self, r, return_ind = False):
+        """Function to calculate the observed surface brightness profiles, i.e. convolved with the PSF for the given results
+        Paramaters
+        ----------
+        r: float or array
+            Radii (in pixels) at which to evaluate the surface brightness profile
+
+        return_ind: bool (optional)
+            If False will only return the sum of all gaussian, i.e. the best fit profile.
+            If true will return an array with +1 dimensions containing the profiles
+            of each individual gaussian component
+        Returns
+        -------
+        obsereved SBP: array
+            Observed surface brightness profiles evaluated at 'r'. If 'return_ind = True',
+            returns the profile of each individual gaussian component
+"""
+        if not self.has_psf:
+            print ('Need PSF to calculate observed SBP')
+            return 0
+        #r needs to be an array to work with np.newaxis below
+        if type(r) == float:
+            r = np.array([r,])
+
+        if np.isscalar(self.q):
+            q_use = np.array([ self.q, ])
+        else:
+            q_use = np.copy(self.q)
+
+        final_var = (self.sig**2 + self.psf_sig[:,None]**2).ravel()
+        print (final_var)
+
+        final_q = np.sqrt( (self.sig[:,None]**2 * q_use*q_use+ self.psf_sig[:,None,None]**2) )
+        final_q = np.moveaxis(final_q, -1,0)
+        final_q = np.moveaxis(final_q, 2,1)
+        final_q = final_q.reshape(self.weights.shape[0], self.weights.shape[1]*len(self.psf_a), order = 'F') / np.sqrt(final_var)
+
+
+        final_a = self.weights*self.psf_a[:,np.newaxis,np.newaxis]
+        final_a = np.moveaxis(final_a,0,-1)
+
+        final_a = final_a.reshape(self.weights.shape[0], self.weights.shape[1]*len(self.psf_a), order = 'F')
+
+        prof_all = final_a/(2*np.pi*final_q*final_var) * np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*final_var))
         prof_all = prof_all.squeeze()
 
         if return_ind:
