@@ -42,7 +42,8 @@ class MultiGaussModel():
         else:
             if verbose: print('No PSF input, running in non-psf mode')
             self.has_psf = False
-
+        
+        self.shape = shape
         self.render_mode = render_mode
         self.log_weight_scale = log_weight_scale
 
@@ -52,12 +53,22 @@ class MultiGaussModel():
 
         self.x_mid = shape[0]/2.
         self.y_mid = shape[1]/2.
+        
         x_pix = np.arange(0,shape[0])
         y_pix = np.arange(0,shape[1])
         X,Y = np.meshgrid(x_pix,y_pix, indexing = 'ij')
         self.X = X
         self.Y = Y
-
+        
+        #Get larger grid for enlarged erf_stack calculation
+        x_pix_lg = np.arange(0,int(shape[0]*1.41)+2 )
+        y_pix_lg = np.arange(0,int(shape[1]*1.41)+2 )
+        X_lg,Y_lg = np.meshgrid(x_pix_lg,y_pix_lg, indexing = 'ij')
+        self._lg_fac_x = int( (x_pix_lg[-1] - x_pix[-1])/2.) 
+        self._lg_fac_y = int( (y_pix_lg[-1] - y_pix[-1])/2.)
+        self.X_lg = X_lg
+        self.Y_lg = Y_lg
+        
         self.sig = sig
         self.var = sig*sig
 
@@ -147,8 +158,8 @@ class MultiGaussModel():
         erf_model: array
             Array representing the model image, same shape as 'shape'
 """
-        X_use = self.X[:,:,None] - x0
-        Y_use = self.Y[:,:,None] - y0
+        X_use = self.X_lg[:,:,None] - (x0 + self._lg_fac_x)
+        Y_use = self.Y_lg[:,:,None] - (y0 + self._lg_fac_y)
         c_x = 1./(np.sqrt(2*final_var))
         c_y = 1./(np.sqrt(2*final_var)*final_q)
 
@@ -158,7 +169,8 @@ class MultiGaussModel():
             return rotate(unrotated_stack, phi*180./np.pi,reshape = False)
 
         unrotated_im = unrotated_stack.sum(axis = -1)
-        return rotate(unrotated_im, phi*180./np.pi,reshape = False)
+        im_lg = rotate(unrotated_im, phi*180./np.pi,reshape = False)
+        return im_lg[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1]] 
 
     def get_sky_model(self,args):
         """ Function used to calculate tilted-plane sky model

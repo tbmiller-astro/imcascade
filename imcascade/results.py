@@ -57,7 +57,8 @@ class ImcascadeResults():
             try:
                 setattr(self, var_name, dict_obj[var_name] )
             except:
-                print ('Could not load -', var_name)
+                setattr(self, var_name, None)
+                #print ('Could not load -', var_name)
 
         if hasattr(self, 'posterier'):
             self.x0 = self.posterier[::int(thin_posterier),0]
@@ -397,3 +398,47 @@ class ImcascadeResults():
                 file.write_to(save_file)
 
         return res_dict
+
+    
+    
+class MultiResults():
+    ''' A Class to analyze and combine multiple ImcascadeResults classes using evidence weighting
+    '''
+    def __init__(self, lofr):
+        self.lofr = lofr
+        self.num_res = len(lofr)
+        self.len_post = np.array([res.posterier.shape[0] for res in self.lofr])
+        self.lnz_list = np.array([res.logz for res in self.lofr])
+        self.lnz_err_list = np.array([res.logz_err for res in self.lofr])
+        #Calculate weights accounting for differnce in evidence and difference in length of posterier
+        self.rel_weight = np.exp(self.lnz_list - np.max(self.lnz_list) )* ( np.min(self.len_post)/ self.len_post )
+        
+        self.rng = rng = np.random.default_rng()
+        
+    def calc_sbp(self,r,num = 1000):
+        all_sbp = np.hstack([res.calc_sbp(r) for res in self.lofr])
+        weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
+        
+        #Normalize to 1
+        weights_cur /= np.sum(weights_cur)
+        sbp_samp = self.rng.choice(all_sbp, p=weights_cur, axis=1,size = int(num) )
+        return sbp_samp
+    
+    def calc_flux(self,cutoff = None, num = 1000):    
+        all_flux = np.hstack([res.calc_flux(cutoff = cutoff) for res in self.lofr])
+        weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
+        
+        #Normalize to 1
+        weights_cur /= np.sum(weights_cur)
+        flux_samp = self.rng.choice(all_flux, p=weights_cur, size = int(num) )
+        return flux_samp
+    
+    def calc_rX(self,X,cutoff = None, num = 1000):  
+        
+        all_rX = np.hstack([res.calc_rX(X,cutoff = cutoff) for res in self.lofr])
+        weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
+        
+        #Normalize to 1
+        weights_cur /= np.sum(weights_cur)
+        rX_samp = self.rng.choice(all_rX, p=weights_cur, size = int(num) )
+        return rX_samp

@@ -11,6 +11,7 @@ import dynesty
 from dynesty import utils as dyfunc
 import emcee
 
+log2pi = np.log(2.*np.pi)
 def FitterFromASDF(file_name, init_dict= {}, bounds_dict = {}):
     af = asdf.open(file_name,copy_arrays=True)
     dict = af.tree.copy()
@@ -98,16 +99,21 @@ class Fitter(MultiGaussModel):
             self.mean_weight = np.mean(self.weight[self.weight>0])
             self.sum_weight = np.sum(self.weight[self.weight>0])
             self.avg_noise = np.mean(1./np.sqrt(self.weight[self.weight>0]))
+        
         if self.weight.shape != self.img.shape:
             raise ValueError("'weight' array must have same shape as 'img'")
-
+        
         if mask is not None:
             if self.weight.shape != self.img.shape:
                 raise ValueError("'mask' array must have same shape as 'img' ")
             self.weight[np.where(mask == 1)] = 0
             self.mask = mask
+            
+            self.log_weight = np.zeros(self.weight.shape)
+            self.log_weight[self.weight > 0 ] = np.log(self.weight[self.weight > 0])
         else:
             self.mask = np.zeros(self.img.shape)
+            self.log_weight = np.log(self.weight)
 
 
 
@@ -133,7 +139,7 @@ class Fitter(MultiGaussModel):
             if np.isnan(sky0_guess):
                 sky0_guess = 0
             init_dict = dict_add(init_dict, 'sky0', sky0_guess)
-            bounds_dict = dict_add(bounds_dict, 'sky0', [-np.abs(sky0_guess)*5, np.abs(sky0_guess)*5])
+            bounds_dict = dict_add(bounds_dict, 'sky0', [-np.abs(sky0_guess)*10, np.abs(sky0_guess)*10])
 
             #estimate X and Y slopes using edges
             use_x_edge = np.where(self.mask[:,-1]*self.mask[:,0] == 0)
@@ -141,14 +147,14 @@ class Fitter(MultiGaussModel):
             if np.isnan(sky1_guess):
                 sky1_guess = 0
             init_dict = dict_add(init_dict, 'sky1', sky1_guess)
-            bounds_dict = dict_add(bounds_dict, 'sky1', [-np.abs(sky1_guess)*5, np.abs(sky1_guess)*5])
+            bounds_dict = dict_add(bounds_dict, 'sky1', [-np.abs(sky1_guess)*10, np.abs(sky1_guess)*10])
 
             use_y_edge = np.where(self.mask[-1,:]*self.mask[0,:] == 0)
             sky2_guess = np.nanmedian(self.img[-1,:][use_y_edge] - img[0,:][use_y_edge])/img.shape[1]
             if np.isnan(sky2_guess):
                 sky2_guess = 0
             init_dict = dict_add(init_dict, 'sky2', sky2_guess)
-            bounds_dict = dict_add(bounds_dict, 'sky2', [-np.abs(sky2_guess)*5, np.abs(sky2_guess)*5])
+            bounds_dict = dict_add(bounds_dict, 'sky2', [-np.abs(sky2_guess)*10, np.abs(sky2_guess)*10])
 
             init_sky_model =  self.get_sky_model([init_dict['sky0'],init_dict['sky1'],init_dict['sky2']] )
 
@@ -318,7 +324,7 @@ class Fitter(MultiGaussModel):
             Chi squared statistic for the given set of parameters
 """
         model = self.make_model(params)
-        return np.sum( (self.img - model)**2 *self.weight)
+        return np.sum( (self.img - model)**2 *self.weight - self.log_weight + np.log(2*np.pi) )
 
     def log_like(self,params):
         """Function to calculate the log likeliehood for a given set of paramters
@@ -386,13 +392,14 @@ class Fitter(MultiGaussModel):
             final_a = exp_params[:-self.Ndof_sky]
         else:
             final_a = np.copy(exp_params)
+        
         if self.log_weight_scale: final_a = 10**final_a
         model = np.sum(final_a*self.express_gauss_arr, axis = -1)
 
         if self.sky_model:
             model += self.get_sky_model(exp_params[-self.Ndof_sky:])
 
-        return -0.5*np.sum( (self.img - model)**2 *self.weight)
+        return -0.5*np.sum( (self.img - model)**2 *self.weight - self.log_weight + log2pi )
 
     def ptform_exp(self, u):
         """Prior transformation function to be used in dynesty 'express' mode.
