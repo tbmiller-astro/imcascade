@@ -90,7 +90,7 @@ class Fitter(MultiGaussModel):
         self.logger = logging.getLogger()
 
         if weight is None:
-            self.weight = 1.
+            self.weight = np.ones(img.shape)
             self.mean_weight = 1.
             self.sum_weight = 1.
             self.avg_noise = 1.
@@ -111,6 +111,7 @@ class Fitter(MultiGaussModel):
             
             self.log_weight = np.zeros(self.weight.shape)
             self.log_weight[self.weight > 0 ] = np.log(self.weight[self.weight > 0])
+            self.loglike_const = 0.5*(np.sum(self.log_weight) - log2pi*(np.sum(self.mask == 0)) )
         else:
             self.mask = np.zeros(self.img.shape)
             self.log_weight = np.log(self.weight)
@@ -135,6 +136,8 @@ class Fitter(MultiGaussModel):
 
         if sky_model:
             #Try to make educated guesses about sky model
+            
+            #estimate background using median
             sky0_guess = np.nanmedian(self.img[np.where(self.mask == 0)])
             if np.isnan(sky0_guess):
                 sky0_guess = 0
@@ -291,24 +294,35 @@ class Fitter(MultiGaussModel):
             self.logger.info('\t PA: %.5f'%phi)
 
         self.exp_set_params = np.array([x0,y0,q_in,phi])
+        
+        if self.has_psf:
+            mod_final = []
+            for i,var_cur in enumerate( self.var ):
+                final_var = self.psf_var + var_cur
+                final_q = np.sqrt( (var_cur*q_in*q_in + self.psf_var ) / (final_var) )
+                final_a = np.copy(self.psf_a)
+                mod_cur = self.get_erf_stack(x0, y0, phi,final_q, final_a, final_var)
+                mod_final.append(mod_cur)
+            gauss_arr = np.moveaxis( np.asarray(mod_final),0,-1)
 
-        mod_final = []
-        for i,var_cur in enumerate( self.var ):
-            final_var = self.psf_var + var_cur
-            final_q = np.sqrt( (var_cur*q_in*q_in + self.psf_var ) / (final_var) )
-            final_a = np.copy(self.psf_a)
-            mod_cur = self.get_erf_stack(x0, y0, phi,final_q, final_a, final_var)
-            mod_final.append(mod_cur)
-        gauss_arr = np.moveaxis( np.asarray(mod_final),0,-1)
+        else:
+            mod_final = self.get_erf_stack(x0, y0, phi,q_in, np.ones(self.Ndof_gauss), self.var, return_stack  = True) 
+            gauss_arr = np.copy(mod_final)         
         self.express_gauss_arr = np.copy(gauss_arr)
         means = np.zeros(self.Ndof_gauss)
 
         if hasattr(self,'min_res'):
-            J = self.min_res.jac
-            cov = np.linalg.inv(J.T.dot(J))
-            s_sq = self.chi_sq(self.min_res.x) / (np.shape(self.img)[0] *np.shape(self.img)[1] - self.Ndof)*self.avg_noise**2
-            err = np.sqrt(np.diagonal(cov)*s_sq)
-            self.min_err = err
+            self._exp_pri_locs = self.min_res.x[4:].copy()
+            
+            jac_cur = self.min_res.jac
+            cov = np.linalg.inv(jac_cur.T.dot(jac_cur))
+            sig = np.sqrt(np.diag(cov))[4:]
+            
+            
+            #Set width to reasonable value if really big
+            sig = sig*3
+            sig[sig>0.5] = 0.5
+            self._exp_pri_scales = sig.copy()
         return gauss_arr
 
     def chi_sq(self,params):
@@ -399,11 +413,27 @@ class Fitter(MultiGaussModel):
         if self.sky_model:
             model += self.get_sky_model(exp_params[-self.Ndof_sky:])
 
-        return -0.5*np.sum( (self.img - model)**2 *self.weight - self.log_weight + log2pi )
+        return -0.5*np.sum( (self.img - model)**2 *self.weight ) + self.loglike_const
+    
+    def ptform_exp_ls(self, u):
+        """Prior transformation function to be used in dynesty 'express' mode using
+        gaussian priors defined by the results of the least_squares minimization
 
-    def ptform_exp(self, u):
-        """Prior transformation function to be used in dynesty 'express' mode.
-        By default they are all unifrom priors defined by self.lb and self.ub
+        Paramaters
+        ----------
+        u: array
+            array of random numbers from 0 to 1
+
+        Returns
+        -------
+        x: array
+            array containing distribution of parameters from prior
+"""
+        return norm.ppf(u, loc = self._exp_pri_locs, scale = self._exp_pri_scales)
+    
+    def ptform_exp_unif(self, u):
+        """Prior transformation function to be used in dynesty 'express' mode using
+        unifrom priors defined by self.lb and self.ub
 
         Paramaters
         ----------
@@ -457,11 +487,13 @@ class Fitter(MultiGaussModel):
         return self.log_like_exp(params) + logp
 
 
-    def run_dynesty(self,method = 'full', sampler_kwargs = {}, run_nested_kwargs = {}):
+    def run_dynesty(self,method = 'full', sampler_kwargs = {'nlive':1500}, run_nested_kwargs = {}, prior = 'min_results'):
         """Function to run dynesty to sample the posterier distribution using either the
         'full' methods which explores all paramters, or the 'express' method which sets
         the structural parameters.
-
+        
+        ---Change to static nested rather then dynamic
+        
         Paramaters
         ----------
         method: str: 'full' or 'express'
@@ -488,7 +520,12 @@ class Fitter(MultiGaussModel):
             if not hasattr(self, 'express_gauss_arr'):
                 if self.verbose: self.logger.info('Setting up Express params')
                 _ = self.set_up_express_run()
-            sampler = dynesty.DynamicNestedSampler( self.log_like_exp, self.ptform_exp, ndim= ndim, **sampler_kwargs)
+            if prior == 'min_results':
+                sampler = dynesty.DynamicNestedSampler( self.log_like_exp, self.ptform_exp_ls, ndim= ndim, **sampler_kwargs)
+            elif prior == 'uniform':
+                sampler = dynesty.DynamicNestedSampler( self.log_like_exp, self.ptform_exp_unif, ndim= ndim, **sampler_kwargs)
+            else:
+                raise ("Chosen prior must be either 'min_results' or 'uniform' ")
         sampler.run_nested(**run_nested_kwargs)
 
         if self.verbose: self.logger.info('Finished running dynesty, calculating posterier')

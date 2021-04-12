@@ -166,8 +166,8 @@ class MultiGaussModel():
         unrotated_stack = final_a/4.*( ( erf(c_x*(X_use-0.5)) - erf(c_x*(X_use+0.5)) )* ( erf(c_y*(Y_use-0.5)) - erf(c_y*(Y_use+0.5)) ) )
 
         if return_stack:
-            return rotate(unrotated_stack, phi*180./np.pi,reshape = False)
-
+            im_lg = rotate(unrotated_stack, phi*180./np.pi,reshape = False)
+            return im_lg[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1], :] 
         unrotated_im = unrotated_stack.sum(axis = -1)
         im_lg = rotate(unrotated_im, phi*180./np.pi,reshape = False)
         return im_lg[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1]] 

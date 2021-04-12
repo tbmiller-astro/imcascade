@@ -100,9 +100,9 @@ class ImcascadeResults():
         self.flux = flux_cur
         return flux_cur
 
-    def calc_rX(self,X,cutoff = None):
-        """Function to calculate the radius containing X percent of the light
-        Paramaters
+    def _min_calc_rX(self,X,cutoff = None):
+        """Old and slow Function to calculate the radius containing X percent of the light
+        Paramaters 
         ----------
         X: float
             Fractional radius of intrest to calculate. if X < 1 will take as a fraction,
@@ -126,7 +126,60 @@ class ImcascadeResults():
             return f_cur(self.weights)
         if self.weights.ndim == 2:
             return np.array(list(map(f_cur, self.weights)) )
+    
+    def calc_rX(self,X,cutoff = None):
+        """Function to calculate the radius containing X percent of the light
+        Paramaters 
+        ----------
+        X: float
+            Fractional radius of intrest to calculate. if X < 1 will take as a fraction,
+            else will interpret as percent and divide X by 100. i.e. to calculate
+            the radius containing 20% of the light, once can either pass X = 20 or 0.2
+        cutoff: float (optional)
+            Radius out to which to consider the profile. Generally this should be
+            around the half-width of the image or the largest gaussian width used
+        Returns
+        -------
+        r_X: float or Array
+            The radius containg X percent of the light
+"""
+        if X> 1:
+            frac_use = X/100.
+        else:
+            frac_use = X
+        
+        #Calculate CoG
+        r = np.linspace(0,np.max(self.sig)*1.5, num = 150)
+        cog = self.calc_cog(r)
+        
+        #locate Area near target
+        fl_target = self.calc_flux(cutoff = cutoff)*frac_use
+        arg_min = np.argmin(np.abs(cog - fl_target), axis = 0 )
+    
+        #Use 2nd degree polynomical interpolation to calculate target radius
+        # When compared more accurate but slower root finding, accurate ~1e-4 %, more then good enough
+        if self.weights.ndim == 1:
+            fl_0 = cog[arg_min -1]
+            fl_1 = cog[arg_min]
+            fl_2 = cog[arg_min + 1]       
+            
+        if self.weights.ndim == 2:
+            fl_0 = cog[arg_min -1,np.arange(cog.shape[1])]
+            fl_1 = cog[arg_min,np.arange(cog.shape[1])]
+            fl_2 = cog[arg_min + 1,np.arange(cog.shape[1])]
 
+
+        r_0 = r[arg_min - 1]
+        r_1 =  r[arg_min]
+        r_2 = r[arg_min + 1 ]
+        
+        r_target = (fl_target - fl_1)*(fl_target - fl_2)/(fl_0 - fl_1)/(fl_0 - fl_2)*r_0
+        r_target += (fl_target - fl_0)*(fl_target - fl_2)/(fl_1 - fl_0)/(fl_1 - fl_2)*r_1
+        r_target += (fl_target - fl_0)*(fl_target - fl_1)/(fl_2 - fl_0)/(fl_2 - fl_1)*r_2
+        
+        return r_target
+    
+    
     def calc_r90(self,cutoff = None):
         """Wrapper function to calculate the radius containing 90% of the light
 
