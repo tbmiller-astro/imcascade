@@ -54,12 +54,9 @@ class ImcascadeResults():
 
         #To-do write better function to do this that can handle missing values
         for var_name in vars_to_use:
-            try:
+            if var_name in dict_obj.keys():
                 setattr(self, var_name, dict_obj[var_name] )
-            except:
-                setattr(self, var_name, None)
-                #print ('Could not load -', var_name)
-
+                
         if hasattr(self, 'posterier'):
             self.x0 = self.posterier[::int(thin_posterier),0]
             self.y0 = self.posterier[::int(thin_posterier),1]
@@ -155,15 +152,19 @@ class ImcascadeResults():
         #locate Area near target
         fl_target = self.calc_flux(cutoff = cutoff)*frac_use
         arg_min = np.argmin(np.abs(cog - fl_target), axis = 0 )
-    
+        
+        
         #Use 2nd degree polynomical interpolation to calculate target radius
         # When compared more accurate but slower root finding, accurate ~1e-4 %, more then good enough
         if self.weights.ndim == 1:
+            if arg_min == 149: argmin -= 1
+
             fl_0 = cog[arg_min -1]
             fl_1 = cog[arg_min]
             fl_2 = cog[arg_min + 1]       
             
         if self.weights.ndim == 2:
+            arg_min[arg_min == 149] = 148
             fl_0 = cog[arg_min -1,np.arange(cog.shape[1])]
             fl_1 = cog[arg_min,np.arange(cog.shape[1])]
             fl_2 = cog[arg_min + 1,np.arange(cog.shape[1])]

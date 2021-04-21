@@ -487,7 +487,7 @@ class Fitter(MultiGaussModel):
         return self.log_like_exp(params) + logp
 
 
-    def run_dynesty(self,method = 'full', sampler_kwargs = {'nlive':1500}, run_nested_kwargs = {}, prior = 'min_results'):
+    def run_dynesty(self,method = 'full', sampler_kwargs = {}, run_nested_kwargs = {}, prior = 'min_results'):
         """Function to run dynesty to sample the posterier distribution using either the
         'full' methods which explores all paramters, or the 'express' method which sets
         the structural parameters.
