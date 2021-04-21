@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.special import erf
 from scipy.ndimage import rotate
+from numba import njit
 
 class MultiGaussModel():
     """A class used to generate models based series of Gaussians """
@@ -171,6 +172,41 @@ class MultiGaussModel():
         unrotated_im = unrotated_stack.sum(axis = -1)
         im_lg = rotate(unrotated_im, phi*180./np.pi,reshape = False)
         return im_lg[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1]] 
+    
+    def get_hybrid_stack(self,x0, y0, phi,final_q, final_a, final_var, return_stack = False):
+        """ Function used to calculate render model using the hybrid method, which uses erf where neccesary to ensure accurate integration and gauss otherwise. Also set everything >5 sigma away to 0.
+        
+        Parameters
+        ----------
+        x0: float
+            x position of center
+        y0: float
+            y position of the center
+        phi: float
+            Position angle
+        final_q: Array
+            Array of axis ratios
+        final_a:
+            Array of Gaussian Weights
+        final_var:
+            Array of Gassian widths, note this the variance so sig^2
+        return_stack: Bool, optional
+            If True returns an image for each individual gaussian
+        Returns
+        -------
+        erf_model: array
+            Array representing the model image, same shape as 'shape'
+"""
+        im_args = (self.X_lg,self.Y_lg,self._lg_fac_x,self._lg_fac_y, self.shape )
+        unrotated_stack = _get_hybrid_stack(x0, y0, phi,final_q, final_a, final_var, im_args)
+
+        if return_stack:
+            im_lg = rotate(unrotated_stack, phi*180./np.pi,reshape = False)
+            return im_lg[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1], :] 
+        
+        unrotated_im = unrotated_stack.sum(axis = -1)
+        im_lg = rotate(unrotated_im, phi*180./np.pi,reshape = False)
+        return im_lg[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1]] 
 
     def get_sky_model(self,args):
         """ Function used to calculate tilted-plane sky model
@@ -222,15 +258,89 @@ class MultiGaussModel():
             final_q = np.sqrt( (self.var*q_in*q_in+ self.psf_var[:,None]).ravel() / (final_var) )
             final_a = (a_in*self.psf_a[:,None]).ravel()
 
-
-        if self.render_mode == 'gauss':
+        if self.render_mode == 'hybrid':
+            model_im = self.get_hybrid_stack(x0, y0, phi,final_q, final_a, final_var)
+        elif self.render_mode == 'erf':
+            model_im = self.get_erf_stack(x0, y0, phi,final_q, final_a, final_var)
+        elif self.render_mode == 'gauss':
             Xp,Yp = self.get_prime_coord( (x0, y0, phi) )
             model_im = self.get_gauss_stack(Xp,Yp, final_q, final_a, final_var)
 
-        if self.render_mode == 'erf':
-            model_im = self.get_erf_stack(x0, y0, phi,final_q, final_a, final_var)
 
         if not self.sky_model:
             return model_im
         else:
             return model_im + self.get_sky_model(param[-self.Ndof_sky:])
+
+@njit
+def _erf_approx(x):
+    """ Approximate erf function for use with numba
+        ----------
+        x: scalar
+            value
+        Returns
+        -------
+        erf(x)
+"""
+    a1 = 0.0705230784
+    a2 = 0.0422820123
+    a3 = 0.0092705272
+    a4 = 0.0001520143
+    a5 = 0.0002765672
+    a6 = 0.0000430638
+    if x > 0:
+        return 1. - np.power(1. + a1*x + a2*np.power(x,2.) + a3*np.power(x,3.) + a4*np.power(x,4.) + a5*np.power(x,5.) + a6*np.power(x,6.), -16.)
+    else: 
+        return -1 + np.power(1. + a1*np.abs(x) + a2*np.power(np.abs(x),2.) + a3*np.power(np.abs(x),3.) + a4*np.power(np.abs(x),4.) + a5*np.power(np.abs(x),5.) + a6*np.power(np.abs(x),6.), -16.)
+
+@njit
+def _get_hybrid_stack(x0, y0, phi,final_q, final_a, final_var, im_args):
+    """ Wrapper Function used to calculate render model using the hybrid method
+        Parameters
+        ----------
+        x0: float
+            x position of center
+        y0: float
+            y position of the center
+        phi: float
+            Position angle
+        final_q: Array
+            Array of axis ratios
+        final_a:
+            Array of Gaussian Weights
+        final_var:
+            Array of Gassian widths, note this the variance so sig^2
+        return_stack: Bool, optional
+            If True returns an image for each individual gaussian
+        Returns
+        -------
+        erf_model: array
+            Array representing the model image, same shape as 'shape'
+"""
+    X_lg,Y_lg,_lg_fac_x,_lg_fac_y, shape = im_args
+    X_use = X_lg - (x0 + _lg_fac_x)
+    Y_use = Y_lg - (y0 + _lg_fac_y)
+    sin_phi = np.sin(phi)
+    cos_phi = np.cos(phi)
+    stack_full = np.zeros((X_use.shape[0],X_use.shape[1], len(final_q)))
+    num_g = final_q.shape[0]
+    
+    for k in range(num_g):
+        q,a,var = final_q[k],final_a[k],final_var[k]
+        use_gauss = (var*q*q > 25.)
+        R2_use = np.square(X_use) + np.square(Y_use)/(q*q)
+
+        for i in range(X_use.shape[0]):
+            for j in range(X_use.shape[1]):
+                #If outside 5sigma then keep as 0
+                if R2_use[i,j]/var > 25:
+                    continue 
+                elif use_gauss:
+                    #If sigma>5 no benefit to using erf so go with quicker simple calc
+                    stack_full[i,j,k] = a / (2*np.pi*var * q) * np.exp( -1.*(X_use[i,j]*X_use[i,j] + Y_use[i,j]*Y_use[i,j]/(q*q) )/ (2*var) )
+                else:
+                    c_x = 1./(np.sqrt(2*var))
+                    c_y = 1./(np.sqrt(2*var)*q)
+                    stack_full[i,j,k] = a/4 *( ( _erf_approx(c_x*(X_use[i,j]-0.5)) - _erf_approx(c_x*(X_use[i,j]+0.5)) )* ( _erf_approx(c_y*(Y_use[i,j] -0.5)) - _erf_approx(c_y*(Y_use[i,j]+0.5)) ) )
+                    
+    return stack_full

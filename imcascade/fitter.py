@@ -33,7 +33,7 @@ def FitterFromASDF(file_name, init_dict= {}, bounds_dict = {}):
 class Fitter(MultiGaussModel):
     """A Class used fit images with MultiGaussModel"""
     def __init__(self, img, sig, psf_sig, psf_a, weight = None, mask = None,\
-      sky_model = True,render_mode = 'erf', log_weight_scale = True, verbose = True,
+      sky_model = True,render_mode = 'hybrid', log_weight_scale = True, verbose = True,
       init_dict = {}, bounds_dict = {}, log_file = None):
         """Initialize a Task instance
         Paramaters
@@ -59,13 +59,15 @@ class Fitter(MultiGaussModel):
         sky_model: bool, optional
             If True will incorperate a tilted plane sky model. Reccomended to be set
             to True
-        render_mode: 'gauss' or 'erf'
-            Option to decide how to render models. Default is 'erf' as it computes
+        render_mode: 'hybrid','erf' or 'gauss'
+            Option to decide how to render models. 'erf' analytically computes
             the integral over the pixel of each profile therefore is more accurate
             but more computationally intensive. 'gauss' assumes the center of a pixel
             provides a reasonble estimate of the average flux in that pixel. 'gauss'
             is faster but far less accurate for objects which vary on O(pixel size),
-            so use with caution.
+            so use with caution. 'hybrid' is the defualt, uses 'erf' for components with width < 5
+            to ensure accuracy and uses 'gauss' otherwise as it is accurate enough and faster. Also
+            assumes all flux > 5 sigma for components is 0.
         log_weight_scale: bool, optional
             Wether to treat weights as log scale, Default True
         verbose: bool, optional

@@ -3,6 +3,7 @@ scipy
 asdf
 emcee
 dynesty
+numba
 astropy
 sep
 pyyaml
