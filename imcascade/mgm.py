@@ -7,7 +7,7 @@ class MultiGaussModel():
     """A class used to generate models based series of Gaussians """
 
     def __init__(self, shape, sig, psf_sig, psf_a, verbose = True, \
-      sky_model = True, render_mode = 'erf', log_weight_scale = True):
+      sky_model = True, render_mode = 'hybrid', log_weight_scale = True):
         """ Initialize a MultiGaussModel instance
         Paramaters
         ----------
@@ -48,9 +48,9 @@ class MultiGaussModel():
         self.render_mode = render_mode
         self.log_weight_scale = log_weight_scale
 
-        if not render_mode in ['gauss', 'erf']:
-            if verbose: print("Incompatible render mode, must choose 'gauss' or 'erf'! Setting to 'erf'")
-            self.render_mode = 'erf'
+        if not render_mode in ['gauss', 'erf','hybrid']:
+            if verbose: print("Incompatible render mode, must choose 'gauss','erf' or 'hybrid'! Setting to 'hybrid'")
+            self.render_mode = 'hybrid'
 
         self.x_mid = shape[0]/2.
         self.y_mid = shape[1]/2.
@@ -251,7 +251,7 @@ class MultiGaussModel():
 
         if not self.has_psf:
             final_var = np.copy(self.var)
-            final_q = q_in
+            final_q = np.array([q_in]*len(final_var))
             final_a = a_in
         else:
             final_var = (self.var + self.psf_var[:,None]).ravel()

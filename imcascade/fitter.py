@@ -113,11 +113,11 @@ class Fitter(MultiGaussModel):
             
             self.log_weight = np.zeros(self.weight.shape)
             self.log_weight[self.weight > 0 ] = np.log(self.weight[self.weight > 0])
-            self.loglike_const = 0.5*(np.sum(self.log_weight) - log2pi*(np.sum(self.mask == 0)) )
         else:
             self.mask = np.zeros(self.img.shape)
             self.log_weight = np.log(self.weight)
-
+            
+        self.loglike_const = 0.5*(np.sum(self.log_weight) - log2pi*(np.sum(self.mask == 0)) )
 
 
         MultiGaussModel.__init__(self,self.img.shape,sig, psf_sig, psf_a, \

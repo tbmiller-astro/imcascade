@@ -157,7 +157,7 @@ class ImcascadeResults():
         #Use 2nd degree polynomical interpolation to calculate target radius
         # When compared more accurate but slower root finding, accurate ~1e-4 %, more then good enough
         if self.weights.ndim == 1:
-            if arg_min == 149: argmin -= 1
+            if arg_min == 149: arg_min -= 1
 
             fl_0 = cog[arg_min -1]
             fl_1 = cog[arg_min]
@@ -314,7 +314,6 @@ class ImcascadeResults():
             q_use = np.copy(self.q)
 
         final_var = (self.sig**2 + self.psf_sig[:,None]**2).ravel()
-        print (final_var)
 
         final_q = np.sqrt( (self.sig[:,None]**2 * q_use*q_use+ self.psf_sig[:,None,None]**2) )
         final_q = np.moveaxis(final_q, -1,0)
@@ -370,7 +369,65 @@ class ImcascadeResults():
                 return np.sum(cog_all, axis = -1)/ self.calc_flux(cutoff = cutoff)
             else:
                 return np.sum(cog_all, axis = -1)
+        
+    def calc_obs_cog(self, r, return_ind = False, norm = False, cutoff = None):
+        """Function to calculate the observed curve of growth, i.e. convolved with the PSF for the given results
+        
+        Paramaters
+        ----------
+        r: float or array
+            Radii (in pixels) at which to evaluate the surface brightness profile
+        return_ind: bool (optional)
+            If False will only return the sum of all gaussian, i.e. the best fit profile.
+            If true will return an array with +1 dimensions containing the profiles
+            of each individual gaussian component
+        norm: Bool (optional)
+            Wether to normalize curves-of-growth to total flux, calculated using
+            'self.calc_flux'. Does nothing if 'return_ind = True'
+        cutoff: Float (optional)
+            Cutoff radius used in 'self.calc_flux', only is used if 'norm' is True
+        Returns
+        -------
+        observed COG: array
+            curves-of-growth evaluated at 'r'. If 'return_ind = True',
+            returns the profile of each individual gaussian component
+"""
+        if not self.has_psf:
+            print ('Need PSF to calculate observed cog')
+            return 0
+        #r needs to be an array to work with np.newaxis below
+        if type(r) == float:
+            r = np.array([r,])
 
+        if np.isscalar(self.q):
+            q_use = np.array([ self.q, ])
+        else:
+            q_use = np.copy(self.q)
+
+        final_var = (self.sig**2 + self.psf_sig[:,None]**2).ravel()
+
+        final_q = np.sqrt( (self.sig[:,None]**2 * q_use*q_use+ self.psf_sig[:,None,None]**2) )
+        final_q = np.moveaxis(final_q, -1,0)
+        final_q = np.moveaxis(final_q, 2,1)
+        final_q = final_q.reshape(self.weights.shape[0], self.weights.shape[1]*len(self.psf_a), order = 'F') / np.sqrt(final_var)
+
+
+        final_a = self.weights*self.psf_a[:,np.newaxis,np.newaxis]
+        final_a = np.moveaxis(final_a,0,-1)
+
+        final_a = final_a.reshape(self.weights.shape[0], self.weights.shape[1]*len(self.psf_a), order = 'F')
+
+        cog_all = final_a*(1 - np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*final_var) ) )
+        cog_all = cog_all.squeeze()
+
+        if return_ind:
+            return cog_all
+        else:
+            if norm:
+                return np.sum(cog_all, axis = -1)/ self.calc_flux(cutoff = cutoff)
+            else:
+                return np.sum(cog_all, axis = -1)
+        
     def run_basic_analysis(self, zpt = None, cutoff = None, errp_lo = 16, errp_hi =84,\
       save_results = False, save_file = './imcascade_results.asdf'):
         """Function to calculate a set of common variables and save the save the results
@@ -468,7 +525,25 @@ class MultiResults():
         self.rel_weight = np.exp(self.lnz_list - np.max(self.lnz_list) )* ( np.min(self.len_post)/ self.len_post )
         
         self.rng = rng = np.random.default_rng()
+    
+    def calc_cog(self,r,num = 1000):
+        all_cog = np.hstack([res.calc_cog(r) for res in self.lofr])
+        weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
         
+        #Normalize to 1
+        weights_cur /= np.sum(weights_cur)
+        cog_samp = self.rng.choice(all_cog, p=weights_cur, axis=1,size = int(num) )
+        return cog_samp
+    
+    def calc_obs_cog(self,r,num = 1000):
+        all_cog = np.hstack([res.calc_obs_cog(r) for res in self.lofr])
+        weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
+        
+        #Normalize to 1
+        weights_cur /= np.sum(weights_cur)
+        cog_samp = self.rng.choice(all_cog, p=weights_cur, axis=1,size = int(num) )
+        return cog_samp    
+    
     def calc_sbp(self,r,num = 1000):
         all_sbp = np.hstack([res.calc_sbp(r) for res in self.lofr])
         weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
@@ -476,6 +551,16 @@ class MultiResults():
         #Normalize to 1
         weights_cur /= np.sum(weights_cur)
         sbp_samp = self.rng.choice(all_sbp, p=weights_cur, axis=1,size = int(num) )
+        return sbp_samp
+    
+    def calc_obs_sbp(self,r,num = 1000):
+        all_sbp = np.hstack([res.calc_obs_sbp(r) for res in self.lofr])
+        weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
+        
+        #Normalize to 1
+        weights_cur /= np.sum(weights_cur)
+        sbp_samp = self.rng.choice(all_sbp, p=weights_cur, axis=1,size = int(num) )
+        
         return sbp_samp
     
     def calc_flux(self,cutoff = None, num = 1000):    
