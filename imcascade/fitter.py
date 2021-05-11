@@ -322,8 +322,8 @@ class Fitter(MultiGaussModel):
             
             
             #Set width to reasonable value if really big
-            sig = sig*3
-            sig[sig>0.5] = 0.5
+            sig = sig*2.
+            sig[sig>1] = 1.
             self._exp_pri_scales = sig.copy()
         return gauss_arr
 
