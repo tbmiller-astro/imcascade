@@ -17,7 +17,7 @@ def FitterFromASDF(file_name, init_dict= {}, bounds_dict = {}):
     dict = af.tree.copy()
 
     keys_for_func = ['weight','mask','sky_model','render_mode','log_weight_scale',
-    'verbose', 'log_file']
+    'verbose', 'log_file','psf_shape']
     kwargs = {}
     for key in dict:
         if key in keys_for_func:
@@ -34,7 +34,7 @@ class Fitter(MultiGaussModel):
     """A Class used fit images with MultiGaussModel"""
     def __init__(self, img, sig, psf_sig, psf_a, weight = None, mask = None,\
       sky_model = True,render_mode = 'hybrid', log_weight_scale = True, verbose = True,
-      init_dict = {}, bounds_dict = {}, log_file = None):
+      psf_shape = None,init_dict = {}, bounds_dict = {}, log_file = None):
         """Initialize a Task instance
         Paramaters
         ----------
@@ -72,6 +72,10 @@ class Fitter(MultiGaussModel):
             Wether to treat weights as log scale, Default True
         verbose: bool, optional
             If true will log and print out errors
+        psf_shape: dict, Optional
+            Dictionary containg at 'q' and 'phi' that define the shape of the PSF.
+            Note that this slows down model rendering significantly so only
+            reccomended if neccesary.
         init_dict: dict, Optional
             Dictionary specifying initial guesses for least_squares fitting. The code
             is desigined to make 'intelligent' guesses if none are provided
@@ -101,28 +105,35 @@ class Fitter(MultiGaussModel):
             self.mean_weight = np.mean(self.weight[self.weight>0])
             self.sum_weight = np.sum(self.weight[self.weight>0])
             self.avg_noise = np.mean(1./np.sqrt(self.weight[self.weight>0]))
-        
+
+        if not render_mode in ['gauss', 'erf','hybrid']:
+            if verbose: self.logger.info("Incompatible render mode, must choose 'gauss','erf' or 'hybrid'! Setting to 'hybrid'")
+            render_mode = 'hybrid'
+
+        if psf_sig is None or psf_a is None:
+            if verbose: self.logger.info('No PSF input, running in non-psf mode')
+
         if self.weight.shape != self.img.shape:
             raise ValueError("'weight' array must have same shape as 'img'")
-        
+
         if mask is not None:
             if self.weight.shape != self.img.shape:
                 raise ValueError("'mask' array must have same shape as 'img' ")
             self.weight[np.where(mask == 1)] = 0
             self.mask = mask
-            
+
             self.log_weight = np.zeros(self.weight.shape)
             self.log_weight[self.weight > 0 ] = np.log(self.weight[self.weight > 0])
         else:
             self.mask = np.zeros(self.img.shape)
             self.log_weight = np.log(self.weight)
-            
+
         self.loglike_const = 0.5*(np.sum(self.log_weight) - log2pi*(np.sum(self.mask == 0)) )
 
 
         MultiGaussModel.__init__(self,self.img.shape,sig, psf_sig, psf_a, \
           verbose = verbose, sky_model = sky_model, render_mode = render_mode, \
-          log_weight_scale = log_weight_scale)
+          log_weight_scale = log_weight_scale, psf_shape = psf_shape)
 
 
         init_dict = dict_add(init_dict, 'x0',self.x_mid)
@@ -138,7 +149,7 @@ class Fitter(MultiGaussModel):
 
         if sky_model:
             #Try to make educated guesses about sky model
-            
+
             #estimate background using median
             sky0_guess = np.nanmedian(self.img[np.where(self.mask == 0)])
             if np.isnan(sky0_guess):
@@ -275,57 +286,63 @@ class Fitter(MultiGaussModel):
         express_gauss_arr: array (shape[0],shape[1], Ndof_gauss)
             Returns a 3-D with pre-rendered images based on input parameters
 """
+        if self.log_weight_scale:
+            p_to_use = np.zeros(self.Ndof)
+        else:
+            p_to_use = np.ones(self.Ndof)
+        
+        p_to_use[-self.Ndof_sky:] = 0
+
         if not set_params is None:
-            x0= set_params[0]
-            y0 = set_params[1]
-            q_in = set_params[2]
-            phi = set_params[3]
+            p_to_use[0] = set_params[0]
+            p_to_use[1] = set_params[1]
+            p_to_use[2] = set_params[2]
+            p_to_use[3] = set_params[3]
+
         else:
             if not hasattr(self, 'min_res'):
                 self.run_ls_min()
 
-            x0= self.min_res.x[0]
-            y0 = self.min_res.x[1]
-            q_in = self.min_res.x[2]
-            phi = self.min_res.x[3]
-
-        if self.verbose:
-            self.logger.info('Parameters to be set for express method:')
-            self.logger.info('\t Galaxy Center: %.2f,%.2f'%(x0,y0) )
-            self.logger.info('\t Axis Ratio: %.5f'%q_in)
-            self.logger.info('\t PA: %.5f'%phi)
-
-        self.exp_set_params = np.array([x0,y0,q_in,phi])
+            p_to_use[0]= self.min_res.x[0]
+            p_to_use[1] = self.min_res.x[1]
+            p_to_use[2] = self.min_res.x[2]
+            p_to_use[3] = self.min_res.x[3]
         
-        if self.has_psf:
-            mod_final = []
-            for i,var_cur in enumerate( self.var ):
-                final_var = self.psf_var + var_cur
-                final_q = np.sqrt( (var_cur*q_in*q_in + self.psf_var ) / (final_var) )
-                final_a = np.copy(self.psf_a)
-                mod_cur = self.get_erf_stack(x0, y0, phi,final_q, final_a, final_var)
-                mod_final.append(mod_cur)
-            gauss_arr = np.moveaxis( np.asarray(mod_final),0,-1)
+        self.exp_set_params = p_to_use[:4]
+        
+        if self.verbose:
+            self.logger.info('Parameters to be set for pre-rendered images:')
+            self.logger.info('\t Galaxy Center: %.2f,%.2f'%(p_to_use[0],p_to_use[1]) )
+            self.logger.info('\t Axis Ratio: %.5f'%p_to_use[2])
+            self.logger.info('\t PA: %.5f'%p_to_use[3])
 
+
+        #### Render images best on best fit structural paramters
+
+        stack_raw = self.make_model(p_to_use, return_stack = True)
+
+        if self.has_psf:
+            #Sum over the components of the PSF if neccesary
+            stack =  np.moveaxis(np.array([stack_raw[:,:,i::self.Ndof_gauss].sum(axis = -1) for i in range(self.Ndof_gauss)] ),0,-1)
         else:
-            mod_final = self.get_erf_stack(x0, y0, phi,q_in, np.ones(self.Ndof_gauss), self.var, return_stack  = True) 
-            gauss_arr = np.copy(mod_final)         
-        self.express_gauss_arr = np.copy(gauss_arr)
+            stack = stack_raw.copy()
+
+        self.express_gauss_arr = np.copy(stack)
         means = np.zeros(self.Ndof_gauss)
 
         if hasattr(self,'min_res'):
             self._exp_pri_locs = self.min_res.x[4:].copy()
-            
+
             jac_cur = self.min_res.jac
             cov = np.linalg.inv(jac_cur.T.dot(jac_cur))
             sig = np.sqrt(np.diag(cov))[4:]
-            
-            
+
+
             #Set width to reasonable value if really big
             sig = sig*2.
             sig[sig>1] = 1.
             self._exp_pri_scales = sig.copy()
-        return gauss_arr
+        return stack
 
     def chi_sq(self,params):
         """Function to calculate chi_sq for a given set of paramters
@@ -408,15 +425,16 @@ class Fitter(MultiGaussModel):
             final_a = exp_params[:-self.Ndof_sky]
         else:
             final_a = np.copy(exp_params)
-        
+
         if self.log_weight_scale: final_a = 10**final_a
+
         model = np.sum(final_a*self.express_gauss_arr, axis = -1)
 
         if self.sky_model:
             model += self.get_sky_model(exp_params[-self.Ndof_sky:])
 
         return -0.5*np.sum( (self.img - model)**2 *self.weight ) + self.loglike_const
-    
+
     def ptform_exp_ls(self, u):
         """Prior transformation function to be used in dynesty 'express' mode using
         gaussian priors defined by the results of the least_squares minimization
@@ -432,7 +450,7 @@ class Fitter(MultiGaussModel):
             array containing distribution of parameters from prior
 """
         return norm.ppf(u, loc = self._exp_pri_locs, scale = self._exp_pri_scales)
-    
+
     def ptform_exp_unif(self, u):
         """Prior transformation function to be used in dynesty 'express' mode using
         unifrom priors defined by self.lb and self.ub
@@ -493,9 +511,7 @@ class Fitter(MultiGaussModel):
         """Function to run dynesty to sample the posterier distribution using either the
         'full' methods which explores all paramters, or the 'express' method which sets
         the structural parameters.
-        
-        ---Change to static nested rather then dynamic
-        
+
         Paramaters
         ----------
         method: str: 'full' or 'express'

@@ -16,7 +16,7 @@ def r_root_func(r,f_L, weights,sig,cutoff):
     return f_L - np.sum(weights*(1. - np.exp(-1.*r**2 / (2*sig**2)) ),axis = -1 ) / calc_flux_input(weights,sig,cutoff = cutoff)
 
 vars_to_use = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss',
- 'has_psf', 'psf_a','psf_sig', 'log_weight_scale','min_param','sky_model',
+ 'has_psf', 'psf_a','psf_sig','psf_shape','log_weight_scale','min_param','sky_model',
  'posterier', 'post_method','log_file', 'logz','logz_err']
 
 class ImcascadeResults():
@@ -56,7 +56,7 @@ class ImcascadeResults():
         for var_name in vars_to_use:
             if var_name in dict_obj.keys():
                 setattr(self, var_name, dict_obj[var_name] )
-                
+
         if hasattr(self, 'posterier'):
             self.x0 = self.posterier[::int(thin_posterier),0]
             self.y0 = self.posterier[::int(thin_posterier),1]
@@ -99,7 +99,7 @@ class ImcascadeResults():
 
     def _min_calc_rX(self,X,cutoff = None):
         """Old and slow Function to calculate the radius containing X percent of the light
-        Paramaters 
+        Paramaters
         ----------
         X: float
             Fractional radius of intrest to calculate. if X < 1 will take as a fraction,
@@ -123,10 +123,10 @@ class ImcascadeResults():
             return f_cur(self.weights)
         if self.weights.ndim == 2:
             return np.array(list(map(f_cur, self.weights)) )
-    
+
     def calc_rX(self,X,cutoff = None):
         """Function to calculate the radius containing X percent of the light
-        Paramaters 
+        Paramaters
         ----------
         X: float
             Fractional radius of intrest to calculate. if X < 1 will take as a fraction,
@@ -144,16 +144,16 @@ class ImcascadeResults():
             frac_use = X/100.
         else:
             frac_use = X
-        
+
         #Calculate CoG
         r = np.linspace(0,np.max(self.sig)*1.5, num = 150)
         cog = self.calc_cog(r)
-        
+
         #locate Area near target
         fl_target = self.calc_flux(cutoff = cutoff)*frac_use
         arg_min = np.argmin(np.abs(cog - fl_target), axis = 0 )
-        
-        
+
+
         #Use 2nd degree polynomical interpolation to calculate target radius
         # When compared more accurate but slower root finding, accurate ~1e-4 %, more then good enough
         if self.weights.ndim == 1:
@@ -161,8 +161,8 @@ class ImcascadeResults():
 
             fl_0 = cog[arg_min -1]
             fl_1 = cog[arg_min]
-            fl_2 = cog[arg_min + 1]       
-            
+            fl_2 = cog[arg_min + 1]
+
         if self.weights.ndim == 2:
             arg_min[arg_min == 149] = 148
             fl_0 = cog[arg_min -1,np.arange(cog.shape[1])]
@@ -173,14 +173,14 @@ class ImcascadeResults():
         r_0 = r[arg_min - 1]
         r_1 =  r[arg_min]
         r_2 = r[arg_min + 1 ]
-        
+
         r_target = (fl_target - fl_1)*(fl_target - fl_2)/(fl_0 - fl_1)/(fl_0 - fl_2)*r_0
         r_target += (fl_target - fl_0)*(fl_target - fl_2)/(fl_1 - fl_0)/(fl_1 - fl_2)*r_1
         r_target += (fl_target - fl_0)*(fl_target - fl_1)/(fl_2 - fl_0)/(fl_2 - fl_1)*r_2
-        
+
         return r_target
-    
-    
+
+
     def calc_r90(self,cutoff = None):
         """Wrapper function to calculate the radius containing 90% of the light
 
@@ -369,10 +369,10 @@ class ImcascadeResults():
                 return np.sum(cog_all, axis = -1)/ self.calc_flux(cutoff = cutoff)
             else:
                 return np.sum(cog_all, axis = -1)
-        
+
     def calc_obs_cog(self, r, return_ind = False, norm = False, cutoff = None):
         """Function to calculate the observed curve of growth, i.e. convolved with the PSF for the given results
-        
+
         Paramaters
         ----------
         r: float or array
@@ -427,7 +427,7 @@ class ImcascadeResults():
                 return np.sum(cog_all, axis = -1)/ self.calc_flux(cutoff = cutoff)
             else:
                 return np.sum(cog_all, axis = -1)
-        
+
     def run_basic_analysis(self, zpt = None, cutoff = None, errp_lo = 16, errp_hi =84,\
       save_results = False, save_file = './imcascade_results.asdf'):
         """Function to calculate a set of common variables and save the save the results
@@ -510,8 +510,8 @@ class ImcascadeResults():
 
         return res_dict
 
-    
-    
+
+
 class MultiResults():
     ''' A Class to analyze and combine multiple ImcascadeResults classes using evidence weighting
     '''
@@ -523,60 +523,60 @@ class MultiResults():
         self.lnz_err_list = np.array([res.logz_err for res in self.lofr])
         #Calculate weights accounting for differnce in evidence and difference in length of posterier
         self.rel_weight = np.exp(self.lnz_list - np.max(self.lnz_list) )* ( np.min(self.len_post)/ self.len_post )
-        
+
         self.rng = rng = np.random.default_rng()
-    
+
     def calc_cog(self,r,num = 1000):
         all_cog = np.hstack([res.calc_cog(r) for res in self.lofr])
         weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
-        
+
         #Normalize to 1
         weights_cur /= np.sum(weights_cur)
         cog_samp = self.rng.choice(all_cog, p=weights_cur, axis=1,size = int(num) )
         return cog_samp
-    
+
     def calc_obs_cog(self,r,num = 1000):
         all_cog = np.hstack([res.calc_obs_cog(r) for res in self.lofr])
         weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
-        
+
         #Normalize to 1
         weights_cur /= np.sum(weights_cur)
         cog_samp = self.rng.choice(all_cog, p=weights_cur, axis=1,size = int(num) )
-        return cog_samp    
-    
+        return cog_samp
+
     def calc_sbp(self,r,num = 1000):
         all_sbp = np.hstack([res.calc_sbp(r) for res in self.lofr])
         weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
-        
+
         #Normalize to 1
         weights_cur /= np.sum(weights_cur)
         sbp_samp = self.rng.choice(all_sbp, p=weights_cur, axis=1,size = int(num) )
         return sbp_samp
-    
+
     def calc_obs_sbp(self,r,num = 1000):
         all_sbp = np.hstack([res.calc_obs_sbp(r) for res in self.lofr])
         weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
-        
+
         #Normalize to 1
         weights_cur /= np.sum(weights_cur)
         sbp_samp = self.rng.choice(all_sbp, p=weights_cur, axis=1,size = int(num) )
-        
+
         return sbp_samp
-    
-    def calc_flux(self,cutoff = None, num = 1000):    
+
+    def calc_flux(self,cutoff = None, num = 1000):
         all_flux = np.hstack([res.calc_flux(cutoff = cutoff) for res in self.lofr])
         weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
-        
+
         #Normalize to 1
         weights_cur /= np.sum(weights_cur)
         flux_samp = self.rng.choice(all_flux, p=weights_cur, size = int(num) )
         return flux_samp
-    
-    def calc_rX(self,X,cutoff = None, num = 1000):  
-        
+
+    def calc_rX(self,X,cutoff = None, num = 1000):
+
         all_rX = np.hstack([res.calc_rX(X,cutoff = cutoff) for res in self.lofr])
         weights_cur = np.hstack([[self.rel_weight[i]]*self.len_post[i] for i in range(self.num_res)] )
-        
+
         #Normalize to 1
         weights_cur /= np.sum(weights_cur)
         rX_samp = self.rng.choice(all_rX, p=weights_cur, size = int(num) )

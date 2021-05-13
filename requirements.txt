@@ -6,4 +6,3 @@ dynesty
 numba
 astropy
 sep
-pyyaml

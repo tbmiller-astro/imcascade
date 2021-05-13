@@ -1,13 +1,14 @@
 import numpy as np
 from scipy.special import erf
-from scipy.ndimage import rotate
+from scipy.ndimage import rotate,shift
 from numba import njit
 
 class MultiGaussModel():
     """A class used to generate models based series of Gaussians """
 
     def __init__(self, shape, sig, psf_sig, psf_a, verbose = True, \
-      sky_model = True, render_mode = 'hybrid', log_weight_scale = True):
+      sky_model = True, render_mode = 'hybrid', log_weight_scale = True, \
+      psf_shape = None):
         """ Initialize a MultiGaussModel instance
         Paramaters
         ----------
@@ -39,37 +40,35 @@ class MultiGaussModel():
             self.psf_sig = psf_sig
             self.psf_var = psf_sig*psf_sig
             self.psf_a = psf_a
+
+
             self.has_psf = True
         else:
-            if verbose: print('No PSF input, running in non-psf mode')
             self.has_psf = False
-        
+
+        self.psf_shape = psf_shape
         self.shape = shape
         self.render_mode = render_mode
         self.log_weight_scale = log_weight_scale
 
-        if not render_mode in ['gauss', 'erf','hybrid']:
-            if verbose: print("Incompatible render mode, must choose 'gauss','erf' or 'hybrid'! Setting to 'hybrid'")
-            self.render_mode = 'hybrid'
-
         self.x_mid = shape[0]/2.
         self.y_mid = shape[1]/2.
-        
+
         x_pix = np.arange(0,shape[0])
         y_pix = np.arange(0,shape[1])
         X,Y = np.meshgrid(x_pix,y_pix, indexing = 'ij')
         self.X = X
         self.Y = Y
-        
+
         #Get larger grid for enlarged erf_stack calculation
         x_pix_lg = np.arange(0,int(shape[0]*1.41)+2 )
         y_pix_lg = np.arange(0,int(shape[1]*1.41)+2 )
         X_lg,Y_lg = np.meshgrid(x_pix_lg,y_pix_lg, indexing = 'ij')
-        self._lg_fac_x = int( (x_pix_lg[-1] - x_pix[-1])/2.) 
+        self._lg_fac_x = int( (x_pix_lg[-1] - x_pix[-1])/2.)
         self._lg_fac_y = int( (y_pix_lg[-1] - y_pix[-1])/2.)
         self.X_lg = X_lg
         self.Y_lg = Y_lg
-        
+
         self.sig = sig
         self.var = sig*sig
 
@@ -83,32 +82,7 @@ class MultiGaussModel():
 
         self.Ndof = 4 + self.Ndof_gauss + self.Ndof_sky
 
-    def get_prime_coord(self, args):
-        """ Function used to calculate the prime coordiantes based on a given
-        central position and position angle
-
-        Parameters
-        ----------
-        args: (xo,y0,phi) (float,float,float)
-            Tuple containing the location of the centre and position angle
-        Returns
-        -------
-        Xp: array
-            Array of primed X coordiantes, same shape as 'X'
-        Yp: array
-            Array of primed Y coordiantes, same shape as 'Y'
-
-"""
-        xo,yo, phi = args
-        cos_phi, sin_phi = np.cos(phi), np.sin(phi)
-        X_centered = self.X - xo
-        Y_centered = self.Y - yo
-        Yp = X_centered * cos_phi + Y_centered * sin_phi
-        Xp = -1*X_centered* sin_phi + Y_centered * cos_phi
-
-        return Xp, Yp
-
-    def get_gauss_stack(self, Xp,Yp, q_arr, a_arr,var_arr):
+    def get_gauss_stack(self, x0,y0, q_arr, a_arr,var_arr):
         """ Function used to calculate render model using the 'Gauss' method
 
         Parameters
@@ -130,13 +104,16 @@ class MultiGaussModel():
                 Array representing the model image, same shape as 'shape'
 """
 
+
+        Xp = self.X - x0
+        Yp = self.Y - y0
         Rp_sq = (Xp*Xp)[:,:,None] + ((Yp*Yp)[:,:,None] / (q_arr*q_arr))
 
         gauss_stack = a_arr / (2*np.pi*var_arr * q_arr) * np.exp( -1.*Rp_sq/ (2*var_arr) )
 
-        return gauss_stack.sum(axis = -1)
+        return gauss_stack
 
-    def get_erf_stack(self,x0, y0, phi,final_q, final_a, final_var, return_stack = False):
+    def get_erf_stack(self,x0, y0, final_q, final_a, final_var):
         """ Function used to calculate render model using the 'erf' method
         Parameters
         ----------
@@ -144,16 +121,12 @@ class MultiGaussModel():
             x position of center
         y0: float
             y position of the center
-        phi: float
-            Position angle
         final_q: Array
             Array of axis ratios
         final_a:
             Array of Gaussian Weights
         final_var:
             Array of Gassian widths, note this the variance so sig^2
-        return_stack: Bool, optional
-            If True returns an image for each individual gaussian
         Returns
         -------
         erf_model: array
@@ -165,48 +138,31 @@ class MultiGaussModel():
         c_y = 1./(np.sqrt(2*final_var)*final_q)
 
         unrotated_stack = final_a/4.*( ( erf(c_x*(X_use-0.5)) - erf(c_x*(X_use+0.5)) )* ( erf(c_y*(Y_use-0.5)) - erf(c_y*(Y_use+0.5)) ) )
+        return unrotated_stack
 
-        if return_stack:
-            im_lg = rotate(unrotated_stack, phi*180./np.pi,reshape = False)
-            return im_lg[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1], :] 
-        unrotated_im = unrotated_stack.sum(axis = -1)
-        im_lg = rotate(unrotated_im, phi*180./np.pi,reshape = False)
-        return im_lg[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1]] 
-    
-    def get_hybrid_stack(self,x0, y0, phi,final_q, final_a, final_var, return_stack = False):
+    def get_hybrid_stack(self,x0, y0, final_q, final_a, final_var):
         """ Function used to calculate render model using the hybrid method, which uses erf where neccesary to ensure accurate integration and gauss otherwise. Also set everything >5 sigma away to 0.
-        
+
         Parameters
         ----------
         x0: float
             x position of center
         y0: float
             y position of the center
-        phi: float
-            Position angle
         final_q: Array
             Array of axis ratios
         final_a:
             Array of Gaussian Weights
         final_var:
             Array of Gassian widths, note this the variance so sig^2
-        return_stack: Bool, optional
-            If True returns an image for each individual gaussian
         Returns
         -------
         erf_model: array
             Array representing the model image, same shape as 'shape'
 """
         im_args = (self.X_lg,self.Y_lg,self._lg_fac_x,self._lg_fac_y, self.shape )
-        unrotated_stack = _get_hybrid_stack(x0, y0, phi,final_q, final_a, final_var, im_args)
 
-        if return_stack:
-            im_lg = rotate(unrotated_stack, phi*180./np.pi,reshape = False)
-            return im_lg[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1], :] 
-        
-        unrotated_im = unrotated_stack.sum(axis = -1)
-        im_lg = rotate(unrotated_im, phi*180./np.pi,reshape = False)
-        return im_lg[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1]] 
+        return _get_hybrid_stack(x0, y0,final_q, final_a, final_var, im_args)
 
     def get_sky_model(self,args):
         """ Function used to calculate tilted-plane sky model
@@ -226,7 +182,7 @@ class MultiGaussModel():
 
         return a + (self.X - self.x_mid)*b + (self.Y - self.y_mid)*c
 
-    def make_model(self,param):
+    def make_model(self,param,return_stack = False):
         """ Function to generate model image based on given paramters array.
         This version assumaes the gaussian weights are given in linear scale
         Paramaters
@@ -253,24 +209,92 @@ class MultiGaussModel():
             final_var = np.copy(self.var)
             final_q = np.array([q_in]*len(final_var))
             final_a = a_in
-        else:
-            final_var = (self.var + self.psf_var[:,None]).ravel()
-            final_q = np.sqrt( (self.var*q_in*q_in+ self.psf_var[:,None]).ravel() / (final_var) )
-            final_a = (a_in*self.psf_a[:,None]).ravel()
+            final_phi = phi
 
+        else:
+            if self.psf_shape == None:
+                final_var = (self.var + self.psf_var[:,None]).ravel()
+                final_q = np.sqrt( (self.var*q_in*q_in+ self.psf_var[:,None]).ravel() / (final_var) )
+                final_a = (a_in*self.psf_a[:,None]).ravel()
+                final_phi = phi
+            else:
+                final_var, final_phi, final_q = get_ellip_conv_params(self.var, q_in, phi, self.psf_var,self.psf_shape['q'],self.psf_shape['phi'])
+                final_a = (a_in*self.psf_a[:,None]).ravel()
+
+        ## Render unrotated stack of components
         if self.render_mode == 'hybrid':
-            model_im = self.get_hybrid_stack(x0, y0, phi,final_q, final_a, final_var)
+            unrot_stack = self.get_hybrid_stack(x0, y0,final_q, final_a, final_var)
         elif self.render_mode == 'erf':
-            model_im = self.get_erf_stack(x0, y0, phi,final_q, final_a, final_var)
+            unrot_stack = self.get_erf_stack(x0, y0,final_q, final_a, final_var)
         elif self.render_mode == 'gauss':
-            Xp,Yp = self.get_prime_coord( (x0, y0, phi) )
-            model_im = self.get_gauss_stack(Xp,Yp, final_q, final_a, final_var)
+            unrot_stack = self.get_gauss_stack(x0,y0, final_q, final_a, final_var)
+
+        #If circular PSF, sum to create img then rotate
+        if self.psf_shape == None:
+            if return_stack:
+                stack = np.array([rot_im(unrot_stack[:,:,i], final_phi, x0+self._lg_fac_x,y0+self._lg_fac_y) for i in range(len(final_a))])
+                stack =  np.moveaxis(stack,0,-1)
+                return stack[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1], :]
+
+            unrot_im_lg = unrot_stack.sum(axis = -1)
+            im_lg = rot_im(unrot_im_lg, final_phi, x0+self._lg_fac_x,y0+self._lg_fac_y)
+
+        #Else rotate each component indvidually, much slower so not advised unless neccesarry
+        else:
+            stack = np.array([rot_im(unrot_stack[:,:,i], final_phi[i], x0 + self._lg_fac_x,y0 + self._lg_fac_y) for i in range(len(final_phi))])
+            stack = np.moveaxis(stack,0,-1)
+            if return_stack:
+                return stack[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1], :]
+
+            im_lg = stack.sum(axis = -1)
+
+        model_im = im_lg[self._lg_fac_x:self._lg_fac_x + self.shape[0], self._lg_fac_y:self._lg_fac_y + self.shape[1]]
 
 
         if not self.sky_model:
             return model_im
         else:
             return model_im + self.get_sky_model(param[-self.Ndof_sky:])
+
+
+def rot_im(img,phi,x0,y0):
+    xc,yc = img.shape
+    xc *= 0.5
+    yc *= 0.5
+    to_shiftx = xc - x0
+    to_shifty = yc - y0
+    #shift to center
+    shifted = shift(img, (to_shiftx,to_shifty))
+    #rotate around center
+    rot_shifted = rotate(shifted,phi*180/np.pi, reshape = False)
+    #shift back
+    final = shift(rot_shifted,(-to_shiftx,-to_shifty))
+    return final
+
+@njit
+def get_ellip_conv_params(var_all, q, phi, psf_var_all,psf_q,psf_phi):
+
+    size = len(var_all)*len(psf_var_all)
+
+    var_final = np.zeros(size)
+    phi_final = np.zeros(size)
+    q_final = np.zeros(size)
+
+    num = 0
+    for psf_var in psf_var_all:
+        for var in var_all:
+            x_temp = (var*(1-q**2)*np.sin(2*phi) + psf_var*(1-psf_q**2)*np.sin(2*psf_phi) )
+            y_temp = (var*(1-q**2)*np.cos(2*phi) + psf_var*(1-psf_q**2)*np.cos(2*psf_phi) )
+            phi_cur = 0.5*np.arctan2(x_temp,y_temp)
+
+            var_cur =  var  *(np.cos(phi-phi_cur)**2 + q**2*np.sin(phi-phi_cur)**2 ) + psf_var *(np.cos(psf_phi-phi_cur)**2 + psf_q**2 *np.sin(psf_phi-phi_cur)**2 )
+            q_cur =  np.sqrt(( var*(np.sin(phi-phi_cur)**2 + q**2*np.cos(phi-phi_cur)**2 ) + psf_var*(np.sin(psf_phi-phi_cur)**2 + psf_q**2 *np.cos(psf_phi-phi_cur)**2 ) ) / var_cur )
+
+            var_final[num] = var_cur
+            phi_final[num] = phi_cur
+            q_final[num] = q_cur
+            num += 1
+    return var_final,phi_final,q_final
 
 @njit
 def _erf_approx(x):
@@ -290,11 +314,11 @@ def _erf_approx(x):
     a6 = 0.0000430638
     if x > 0:
         return 1. - np.power(1. + a1*x + a2*np.power(x,2.) + a3*np.power(x,3.) + a4*np.power(x,4.) + a5*np.power(x,5.) + a6*np.power(x,6.), -16.)
-    else: 
+    else:
         return -1 + np.power(1. + a1*np.abs(x) + a2*np.power(np.abs(x),2.) + a3*np.power(np.abs(x),3.) + a4*np.power(np.abs(x),4.) + a5*np.power(np.abs(x),5.) + a6*np.power(np.abs(x),6.), -16.)
 
 @njit
-def _get_hybrid_stack(x0, y0, phi,final_q, final_a, final_var, im_args):
+def _get_hybrid_stack(x0, y0,final_q, final_a, final_var, im_args):
     """ Wrapper Function used to calculate render model using the hybrid method
         Parameters
         ----------
@@ -302,8 +326,6 @@ def _get_hybrid_stack(x0, y0, phi,final_q, final_a, final_var, im_args):
             x position of center
         y0: float
             y position of the center
-        phi: float
-            Position angle
         final_q: Array
             Array of axis ratios
         final_a:
@@ -320,11 +342,9 @@ def _get_hybrid_stack(x0, y0, phi,final_q, final_a, final_var, im_args):
     X_lg,Y_lg,_lg_fac_x,_lg_fac_y, shape = im_args
     X_use = X_lg - (x0 + _lg_fac_x)
     Y_use = Y_lg - (y0 + _lg_fac_y)
-    sin_phi = np.sin(phi)
-    cos_phi = np.cos(phi)
     stack_full = np.zeros((X_use.shape[0],X_use.shape[1], len(final_q)))
     num_g = final_q.shape[0]
-    
+
     for k in range(num_g):
         q,a,var = final_q[k],final_a[k],final_var[k]
         use_gauss = (var*q*q > 25.)
@@ -333,8 +353,8 @@ def _get_hybrid_stack(x0, y0, phi,final_q, final_a, final_var, im_args):
         for i in range(X_use.shape[0]):
             for j in range(X_use.shape[1]):
                 #If outside 5sigma then keep as 0
-                if R2_use[i,j]/var > 25:
-                    continue 
+                if R2_use[i,j]/var > 25.:
+                    continue
                 elif use_gauss:
                     #If sigma>5 no benefit to using erf so go with quicker simple calc
                     stack_full[i,j,k] = a / (2*np.pi*var * q) * np.exp( -1.*(X_use[i,j]*X_use[i,j] + Y_use[i,j]*Y_use[i,j]/(q*q) )/ (2*var) )
@@ -342,5 +362,5 @@ def _get_hybrid_stack(x0, y0, phi,final_q, final_a, final_var, im_args):
                     c_x = 1./(np.sqrt(2*var))
                     c_y = 1./(np.sqrt(2*var)*q)
                     stack_full[i,j,k] = a/4 *( ( _erf_approx(c_x*(X_use[i,j]-0.5)) - _erf_approx(c_x*(X_use[i,j]+0.5)) )* ( _erf_approx(c_y*(Y_use[i,j] -0.5)) - _erf_approx(c_y*(Y_use[i,j]+0.5)) ) )
-                    
+
     return stack_full
