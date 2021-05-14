@@ -1,1 +1,4 @@
 nbsphinx
+sphinx-rtd-theme
+sphinx-autoapi
+sphinxcontrib-napoleon

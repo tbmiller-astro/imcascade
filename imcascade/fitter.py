@@ -31,58 +31,61 @@ def FitterFromASDF(file_name, init_dict= {}, bounds_dict = {}):
     return inst
 
 class Fitter(MultiGaussModel):
-    """A Class used fit images with MultiGaussModel"""
+    """A Class used fit images with MultiGaussModel
+
+    This is the main class used to fit ``imcascade`` models
+
+    Parameters
+    ----------
+    img: 2D Array
+        Data to be fit, it is assumed to be a cutout with the object of interest
+        in the center of the image
+    sig: 1D Array
+        Widths of Gaussians to be used in MultiGaussModel
+    psf_sig: 1D array, None
+        Width of Gaussians used to approximate psf
+    psf_a: 1D array, None
+        Weights of Gaussians used to approximate psf
+        If both psf_sig and psf_a are None then will run in Non-psf mode
+    weight: 2D Array, optional
+        Array of pixel by pixel weights to be used in fitting. Must be same
+        shape as 'img' If None, all the weights will be set to 1.
+    mask: 2D Array, optional
+        Array with the same shape as 'img' denoting which, if any, pixels
+        to mask  during fitting process. Values of '1' or 'True' values for
+        the pixels to be masked. If set to 'None' then will not mask any
+        pixels. In practice, the weights of masked pixels is set to '0'.
+    sky_model: bool, optional
+        If True will incorperate a tilted plane sky model. Reccomended to be set
+        to True
+    render_mode: 'hybrid', 'erf' or 'gauss'
+        Option to decide how to render models. 'erf' analytically computes
+        the integral over the pixel of each profile therefore is more accurate
+        but more computationally intensive. 'gauss' assumes the center of a pixel
+        provides a reasonble estimate of the average flux in that pixel. 'gauss'
+        is faster but far less accurate for objects which vary on O(pixel size),
+        so use with caution. 'hybrid' is the defualt, uses 'erf' for components with width < 5
+        to ensure accuracy and uses 'gauss' otherwise as it is accurate enough and faster. Also
+        assumes all flux > 5 sigma for components is 0.
+    log_weight_scale: bool, optional
+        Wether to treat weights as log scale, Default True
+    verbose: bool, optional
+        If true will log and print out errors
+    psf_shape: dict, Optional
+        Dictionary containg at 'q' and 'phi' that define the shape of the PSF.
+        Note that this slows down model rendering significantly so only
+        reccomended if neccesary.
+    init_dict: dict, Optional
+        Dictionary specifying initial guesses for least_squares fitting. The code
+        is desigined to make 'intelligent' guesses if none are provided
+    bounds_dict: dict, Optional
+        Dictionary specifying boundss for least_squares fitting and priors. The code
+        is desigined to make 'intelligent' guesses if none are provided
+"""
     def __init__(self, img, sig, psf_sig, psf_a, weight = None, mask = None,\
       sky_model = True,render_mode = 'hybrid', log_weight_scale = True, verbose = True,
       psf_shape = None,init_dict = {}, bounds_dict = {}, log_file = None):
-        """Initialize a Task instance
-        Paramaters
-        ----------
-        img: 2D Array
-            Data to be fit, it is assumed to be a cutout with the object of interest
-            in the center of the image
-        sig: 1D Array
-            Widths of Gaussians to be used in MultiGaussModel
-        psf_sig: 1D array, None
-            Width of Gaussians used to approximate psf
-        psf_a: 1D array, None
-            Weights of Gaussians used to approximate psf
-            If both psf_sig and psf_a are None then will run in Non-psf mode
-        weight: 2D Array, optional
-            Array of pixel by pixel weights to be used in fitting. Must be same
-            shape as 'img' If None, all the weights will be set to 1.
-        mask: 2D Array, optional
-            Array with the same shape as 'img' denoting which, if any, pixels
-            to mask  during fitting process. Values of '1' or 'True' values for
-            the pixels to be masked. If set to 'None' then will not mask any
-            pixels. In practice, the weights of masked pixels is set to '0'.
-        sky_model: bool, optional
-            If True will incorperate a tilted plane sky model. Reccomended to be set
-            to True
-        render_mode: 'hybrid','erf' or 'gauss'
-            Option to decide how to render models. 'erf' analytically computes
-            the integral over the pixel of each profile therefore is more accurate
-            but more computationally intensive. 'gauss' assumes the center of a pixel
-            provides a reasonble estimate of the average flux in that pixel. 'gauss'
-            is faster but far less accurate for objects which vary on O(pixel size),
-            so use with caution. 'hybrid' is the defualt, uses 'erf' for components with width < 5
-            to ensure accuracy and uses 'gauss' otherwise as it is accurate enough and faster. Also
-            assumes all flux > 5 sigma for components is 0.
-        log_weight_scale: bool, optional
-            Wether to treat weights as log scale, Default True
-        verbose: bool, optional
-            If true will log and print out errors
-        psf_shape: dict, Optional
-            Dictionary containg at 'q' and 'phi' that define the shape of the PSF.
-            Note that this slows down model rendering significantly so only
-            reccomended if neccesary.
-        init_dict: dict, Optional
-            Dictionary specifying initial guesses for least_squares fitting. The code
-            is desigined to make 'intelligent' guesses if none are provided
-        bounds_dict: dict, Optional
-            Dictionary specifying boundss for least_squares fitting and priors. The code
-            is desigined to make 'intelligent' guesses if none are provided
-"""
+        """Initialize a Task instance"""
         self.img  = img
         self.verbose = verbose
 
@@ -234,10 +237,11 @@ class Fitter(MultiGaussModel):
         """ Given a set of parameters returns the 1-D flattened residuals
         when compared to the Data, to be used in run_ls_min Function
 
-        Paramaters
+        Parameters
         ----------
         params: Array
             List of parameters to define model
+
         Returns
         -------
         resid_flatten: array
@@ -249,19 +253,22 @@ class Fitter(MultiGaussModel):
 
     def run_ls_min(self, ls_kwargs = {}):
         """ Function to run a least_squares minimization routine using pre-determined
-        inital guesses and bounds. Utilizes the scipy least_squares routine
-        (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html)
+        inital guesses and bounds.
 
-        Paramaters
+        Utilizes the scipy least_squares routine (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html)
+
+        Parameters
         ----------
         ls_kwargs: dict, optional
             Optional list of arguments to be passes to least_squares routine
+
         Returns
         -------
         min_res: scipy.optimize.OptimizeResult
             Returns an Optimize results class containing the optimized parameters
             along with error and status messages
             (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html)
+            noteworthy that the best fit parameters are stored in ``min_res.x``
 """
         if self.verbose: self.logger.info('Running least squares minimization')
         min_res = least_squares(self.resid_1d, self.param_init, bounds = self.bnds, **ls_kwargs)
@@ -276,11 +283,12 @@ class Fitter(MultiGaussModel):
         fixed x0,y0, phi and q. Sets class attribute 'express_gauss_arr' which
         is needed to run dynesty or emcee in express mode
 
-        Paramaters
+        Parameters
         ----------
         set_params: len(4) array-like, optional
             Parameters (x0,y0,q,phi) to use to per-render images. If None will
-            call run_ls_min to find parameters.
+            call ``run_ls_min()`` or use stored ``min_res`` to find parameters.
+
         Returns
         -------
         express_gauss_arr: array (shape[0],shape[1], Ndof_gauss)
@@ -290,7 +298,7 @@ class Fitter(MultiGaussModel):
             p_to_use = np.zeros(self.Ndof)
         else:
             p_to_use = np.ones(self.Ndof)
-        
+
         p_to_use[-self.Ndof_sky:] = 0
 
         if not set_params is None:
@@ -307,9 +315,9 @@ class Fitter(MultiGaussModel):
             p_to_use[1] = self.min_res.x[1]
             p_to_use[2] = self.min_res.x[2]
             p_to_use[3] = self.min_res.x[3]
-        
+
         self.exp_set_params = p_to_use[:4]
-        
+
         if self.verbose:
             self.logger.info('Parameters to be set for pre-rendered images:')
             self.logger.info('\t Galaxy Center: %.2f,%.2f'%(p_to_use[0],p_to_use[1]) )
@@ -347,7 +355,7 @@ class Fitter(MultiGaussModel):
     def chi_sq(self,params):
         """Function to calculate chi_sq for a given set of paramters
 
-        Paramaters
+        Parameters
         ----------
         params: Array
             List of parameters to define model
@@ -362,7 +370,7 @@ class Fitter(MultiGaussModel):
     def log_like(self,params):
         """Function to calculate the log likeliehood for a given set of paramters
 
-        Paramaters
+        Parameters
         ----------
         params: Array
             List of parameters to define model
@@ -377,7 +385,7 @@ class Fitter(MultiGaussModel):
     def ptform(self, u):
         """Prior transformation function to be used in dynesty 'full' mode
 
-        Paramaters
+        Parameters
         ----------
         u: array
             array of random numbers from 0 to 1
@@ -409,7 +417,7 @@ class Fitter(MultiGaussModel):
         """Function to calculate the log likeliehood for a given set of paramters,
         specifically using the pre-renedered model for the 'express' mode
 
-        Paramaters
+        Parameters
         ----------
         exo_params: Array
             List of parameters to define model. Length is Ndof_gauss + Ndof_sky
@@ -439,7 +447,7 @@ class Fitter(MultiGaussModel):
         """Prior transformation function to be used in dynesty 'express' mode using
         gaussian priors defined by the results of the least_squares minimization
 
-        Paramaters
+        Parameters
         ----------
         u: array
             array of random numbers from 0 to 1
@@ -455,7 +463,7 @@ class Fitter(MultiGaussModel):
         """Prior transformation function to be used in dynesty 'express' mode using
         unifrom priors defined by self.lb and self.ub
 
-        Paramaters
+        Parameters
         ----------
         u: array
             array of random numbers from 0 to 1
@@ -473,7 +481,7 @@ class Fitter(MultiGaussModel):
         """Prior function to be used in emcee 'express' mode.
         By default they are all unifrom priors defined by self.lb and self.ub
 
-        Paramaters
+        Parameters
         ----------
         u: array
             array of random numbers from 0 to 1
@@ -493,7 +501,7 @@ class Fitter(MultiGaussModel):
         """Probability function to be used in emcee 'express' mode.
         By default they are all unifrom priors defined by self.lb and self.ub
 
-        Paramaters
+        Parameters
         ----------
         u: array
             array of random numbers from 0 to 1
@@ -512,7 +520,7 @@ class Fitter(MultiGaussModel):
         'full' methods which explores all paramters, or the 'express' method which sets
         the structural parameters.
 
-        Paramaters
+        Parameters
         ----------
         method: str: 'full' or 'express'
             Which method to use to run dynesty
@@ -522,12 +530,18 @@ class Fitter(MultiGaussModel):
         run_nested_kwargs: dict
             set of keyword arguments to pass the the dynesty run_nested call, see:
             https://dynesty.readthedocs.io/en/latest/api.html#dynesty.dynamicsampler.DynamicSampler.run_nested
+        prior: 'min_results' or 'uniform'
+            Which of the two choices of priors to use. The `min_results` priors are Gaussian,
+            with centers defined by the best fit paramters and variance equal to 4 times
+            the variance estimated using the Hessian matrix from the run_ls_min() run.
+            `uniform` is what it sounds like, uniform priors based on the the lower and upper bounds
+            Defualt is `min_results`
 
         Returns
         -------
-        Posterier: Array
+        Posterior: Array
             Posterier distribution derrived. If method is 'express', the first 4 columns,
-            containg x0,y0,PA and q, are all the same and equal to values used to pre-render the images
+            containg x0, y0, PA and q, are all the same and equal to values used to pre-render the images
 """
         if self.verbose: self.logger.info('Running dynesty using the %s method'%method)
         if method == 'full':
@@ -626,16 +640,16 @@ class Fitter(MultiGaussModel):
     def save_results(self,file_name, run_basic_analysis = True, thin_posterier = 1, zpt = None, cutoff = None, errp_lo = 16, errp_hi =84):
         """Function to save results after run_ls_min, run_dynesty and/or run_emcee is performed. Will be saved as an ASDF file.
 
-        Paramaters
+        Parameters
         ----------
         file_name: str
             Str defining location of where to save data
-        run_basic_analysis: Bool (default true)
+        run_basic_analysis: Bool (default True)
             If true will run ImcascadeResults.run_basic_analysis
 
         Returns
         -------
-        Posterier: Array
+        Posterior: Array
             Posterier distribution derrived. If method is 'express', the first 4 columns,
             containg x0,y0,PA and q, are all the same and equal to values used to pre-rended the images
 """

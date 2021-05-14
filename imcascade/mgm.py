@@ -4,38 +4,39 @@ from scipy.ndimage import rotate,shift
 from numba import njit
 
 class MultiGaussModel():
-    """A class used to generate models based series of Gaussians """
+    """A class used to generate models based series of Gaussians
+
+    Parameters
+    ----------
+    shape: 2x1 array_like
+        Size of model image to generate
+    sig: 1-D array
+        Widths of Gaussians used to genrate model
+    psf_sig: 1-D array, None
+        Width of Gaussians used to approximate psf
+    psf_a: 1-D array, None
+        Weights of Gaussians used to approximate psf, must be same length
+        as 'psf_sig'. If both psf_sig and psf_a are None then will run in
+        Non-psf mode
+    verbose: bool, optional
+        If true will print out errors
+    sky_model: bool, optional
+        If True will incorperate a tilted plane sky model
+    render_mode: 'gauss' or 'erf'
+        Option to decide how to render models. Default is 'erf' as it computes
+        the integral over the pixel of each profile therefore is more accurate
+        but more computationally intensive. 'gauss' assumes the center of a pixel
+        provides a reasonble estimate of the average flux in that pixel. 'gauss'
+        is faster but far less accurate for objects with size O(pixel size),
+        so use with caution.
+    log_weight_scale: bool, optional
+        Wether to treat weights as log scale, Default True
+"""
 
     def __init__(self, shape, sig, psf_sig, psf_a, verbose = True, \
       sky_model = True, render_mode = 'hybrid', log_weight_scale = True, \
       psf_shape = None):
-        """ Initialize a MultiGaussModel instance
-        Paramaters
-        ----------
-        shape: 2x1 array_like
-            Size of model image to generate
-        sig: 1-D array
-            Widths of Gaussians used to genrate model
-        psf_sig: 1-D array, None
-            Width of Gaussians used to approximate psf
-        psf_a: 1-D array, None
-            Weights of Gaussians used to approximate psf, must be same length
-            as 'psf_sig'. If both psf_sig and psf_a are None then will run in
-            Non-psf mode
-        verbose: bool, optional
-            If true will print out errors
-        sky_model: bool, optional
-            If True will incorperate a tilted plane sky model
-        render_mode: 'gauss' or 'erf'
-            Option to decide how to render models. Default is 'erf' as it computes
-            the integral over the pixel of each profile therefore is more accurate
-            but more computationally intensive. 'gauss' assumes the center of a pixel
-            provides a reasonble estimate of the average flux in that pixel. 'gauss'
-            is faster but far less accurate for objects with size O(pixel size),
-            so use with caution.
-        log_weight_scale: bool, optional
-            Wether to treat weights as log scale, Default True
-"""
+        """ Initialize a MultiGaussModel instance"""
         if psf_sig is not None or psf_a is not None:
             self.psf_sig = psf_sig
             self.psf_var = psf_sig*psf_sig
@@ -87,10 +88,10 @@ class MultiGaussModel():
 
         Parameters
         ----------
-        Xp: array
-            Array of primed X coordiantes
-        Yp: array
-            Array of primed Y coordiantes,
+        x0: float
+            x position of center
+        y0: float
+            y position of center
         q_arr: Array
             Array of axis ratios
         a_arr:
@@ -99,11 +100,10 @@ class MultiGaussModel():
             Array of Gassian widths, note this the variance so sig^2
 
         Returns
-
+        -------
         Gauss_model: array
                 Array representing the model image, same shape as 'shape'
 """
-
 
         Xp = self.X - x0
         Yp = self.Y - y0
@@ -115,6 +115,7 @@ class MultiGaussModel():
 
     def get_erf_stack(self,x0, y0, final_q, final_a, final_var):
         """ Function used to calculate render model using the 'erf' method
+
         Parameters
         ----------
         x0: float
@@ -123,14 +124,14 @@ class MultiGaussModel():
             y position of the center
         final_q: Array
             Array of axis ratios
-        final_a:
+        final_a: Array
             Array of Gaussian Weights
-        final_var:
+        final_var: Array
             Array of Gassian widths, note this the variance so sig^2
         Returns
         -------
         erf_model: array
-            Array representing the model image, same shape as 'shape'
+            Array representing each rendered component
 """
         X_use = self.X_lg[:,:,None] - (x0 + self._lg_fac_x)
         Y_use = self.Y_lg[:,:,None] - (y0 + self._lg_fac_y)
@@ -151,14 +152,15 @@ class MultiGaussModel():
             y position of the center
         final_q: Array
             Array of axis ratios
-        final_a:
+        final_a: Array
             Array of Gaussian Weights
-        final_var:
+        final_var: Array
             Array of Gassian widths, note this the variance so sig^2
+
         Returns
         -------
-        erf_model: array
-            Array representing the model image, same shape as 'shape'
+        erf_model: 3D array
+            Array representing each rendered component
 """
         im_args = (self.X_lg,self.Y_lg,self._lg_fac_x,self._lg_fac_y, self.shape )
 
@@ -169,13 +171,13 @@ class MultiGaussModel():
         Parameters
         ----------
         args: (a,b,c) (float,float,float)
-            a: overall normalization
-            b: slope in x direction
-            c: slope in y direction
+            a - overall normalization
+            b - slope in x direction
+            c - slope in y direction
 
         Returns
         -------
-        sky_model: Array
+        sky_model: 2D Array
         Model for sky background based on given parameters, same shape as 'shape'
 """
         a,b,c = args
@@ -185,14 +187,16 @@ class MultiGaussModel():
     def make_model(self,param,return_stack = False):
         """ Function to generate model image based on given paramters array.
         This version assumaes the gaussian weights are given in linear scale
-        Paramaters
+
+        Parameters
         ----------
         param: array
             1-D array containing all the Parameters
+
         Returns
         -------
-        model_image: Array
-            Generated model image
+        model_image: 2D Array
+            Generated model image as the sum of all components plus sky, if included
 """
         x0= param[0]
         y0 = param[1]
@@ -273,6 +277,31 @@ def rot_im(img,phi,x0,y0):
 
 @njit
 def get_ellip_conv_params(var_all, q, phi, psf_var_all,psf_q,psf_phi):
+    """Function used to derrive the observed Gaussian Parameters for a non-circular PSF
+
+        Parameters
+        ----------
+        var: array
+            Variances of Gaussian components
+        q: Float
+            Axis ratio of Galaxy
+        phi: Float
+            PA of galaxy
+        psf_var_all: array
+            Variances of PSF gaussian decomposition
+        psf_q: float
+            Axis ratio of PSF
+        psf_phi: PA of PSF
+
+        Returns
+        -------
+        obs_var: array
+            Array of variances for the components of the convolved gaussian model
+        obs_phi: array
+            Array of position angles for the components of the convolved gaussian model
+        obs_q: array
+            Array of axis ratios for the components of the convolved gaussian model
+"""
 
     size = len(var_all)*len(psf_var_all)
 
@@ -299,12 +328,15 @@ def get_ellip_conv_params(var_all, q, phi, psf_var_all,psf_q,psf_phi):
 @njit
 def _erf_approx(x):
     """ Approximate erf function for use with numba
-        ----------
-        x: scalar
-            value
-        Returns
-        -------
-        erf(x)
+
+    Parameters
+    ----------
+    x: scalar
+        value
+
+    Returns
+    -------
+        Approximation of erf(x)
 """
     a1 = 0.0705230784
     a2 = 0.0422820123

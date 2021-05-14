@@ -54,4 +54,4 @@ The analysis of results from ``imcascade`` is non-trivial as the free parameters
 
 Additionally ``ImcascadeResuts`` contaains other methods to caluclate the recovered surface brightness profile, curve-of-growth and others
 
-And with that you have fit your first object using ``imcascade``!! Please see *LINK* to see a much more detailed example and feel free to reach out to me 
+And with that you have fit your first object using imcascade!! Please see the In depth example page to see a much more detailed example or the advanced guide for a discussion of more advanceded features.
