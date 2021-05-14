@@ -8,7 +8,7 @@ imcascade
 
 Welcome to the documentation for ``imcascade``. It is a non-parametric framework for fitting astronomical images to study the morphological properties of galaxies and other objects. This is accomplished by modelling them as a series (or cascade) of Gaussians
 
-If you are planning on using ``imcascade``, it is strongly reccomeneded to read the paper describing the method, availiable *put Arxiv link*
+If you are planning on using ``imcascade``, it is strongly recommended to read the paper describing the method, available **Put arXiv link here**
 
 .. toctree::
    :maxdepth: 2

@@ -29,7 +29,8 @@ release = '0.1'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['nbsphinx',]
+extensions = ['nbsphinx','autoapi.extension', 'sphinxcontrib.napoleon',
+ 'sphinx.ext.autodoc', 'sphinx.ext.inheritance_diagram',]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -47,10 +48,12 @@ exclude_patterns = ['.ipynb_checkpoints/*', '*.asdf', '*.log']
 
 nbsphinx_prompt_width = 0 # no prompts in nbsphinx
 nbsphinx_execute = 'never'
-html_theme_options = {'page_width': '50%','body_max_width': 'auto', 'sidebar_width':'250px'}
+html_theme_options = {'body_max_width': 'auto'}
 master_doc = 'index'
 
-html_theme = 'alabaster'
+autoapi_dirs = ['../../imcascade']
+
+html_theme = 'sphinx_rtd_theme'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

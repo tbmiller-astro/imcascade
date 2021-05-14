@@ -6,19 +6,32 @@ from imcascade.fitter import Fitter
 from imcascade.utils import min_diff_array
 
 class PSFFitter():
-    """A Class used to fit Gaussian models to a PSF image"""
+    """A Class used to fit Gaussian models to a PSF image
+
+Parameters
+----------
+psf_img : str or 2D array
+    PSF data to be fit. If a string is given will assume it is a fits file
+    and load the Data in the first HDU. If it is an array then will use
+    as the PSF image. Either way it is assumed the PSF is centered and image
+    is square.
+oversamp : Float, optional
+    Factor by which the PSF image is oversampled. Default is 1.
+
+Attributes
+----------
+psf_data: 2D array
+    pixelized PSF data to be fit
+intens: 1D array
+    1D sbp of PSF
+radii: 1D array
+    Radii corresponding to ``intens``
+
+"""
     def __init__(self,psf_img,oversamp = 1.):
         """ Initialize a PSFFitter instance
-        Paramaters
-        ----------
-        psf_img: str or 2D array
-        PSF data to be fit. If a string is given will assume it is a fits file
-        and load the Data in the first HDU. If it is an array then will use
-        as the PSF image. Either way it is assumed the PSF is centered and image
-        is square.
-        oversamp: Float, optional
-        Factor by which the PSF image is oversampled. Default is 1.
 """
+
         if type(psf_img) == str:
             fits_file = fits.open(psf_img)
             self.psf_data = np.array(fits_file[0].data, dtype = '<f4')
@@ -34,12 +47,13 @@ class PSFFitter():
 
     def calc_profile(self):
         """Calculates the 1-D PSF profile in 1 pixel steps assuming it is circular
+
         Returns
         -------
-        intens: 1-D array
-            Intensity profile
-        radius:
-            radii at which the intensity measuremnts are made
+        intens: 1D array
+            Intensity profile.
+        radius: 1D array
+            radii at which the intensity measuremnts are made.
 """
 
         maxr = int(np.min([self.cent_pix_x,self.cent_pix_y]) )
@@ -55,22 +69,20 @@ class PSFFitter():
         """ Function used to evaluate a 1-D multi Gaussian model with any number
         of components
 
-        Paramaters
+        Parameters
         ----------
-        r: float or array
+        params: 1D array
+            List of parameters to define model. The length should be twice the
+            number of components in the following pattern:[ a_1, sig_1, a_2,sig_2, ....]
+            where a_i is the weight of the i'th  component and sig_i is the width of the i'th component.
+        r: float, array
             Radii at which the profile is to  be evaluated
-
-        params: 1D Array
-            List of parameters to define model. The length should be twice
-            the number of components in the following pattern:
-            [ a_1, sig_1, a_2,sig_2, ....]. Here a_i is the weight of the i'th
-            component and sig_i is the width of the i'th component
-         mu: float, Optional
-            The centre of the gaussian distribution, default is 0.
+        mu: float, optional
+            The centre of the gaussian distribution, default is 0
 
         Returns
         -------
-        prof: 1D array
+        1D array
             The multi-gaussian profile evaluated at 'r'
 """
 
@@ -84,22 +96,24 @@ class PSFFitter():
 
     def multi_gauss_1d_ls(self,*params, x_data = np.zeros(10),y_data = np.zeros(10),mu = 0):
         """ Wrapper for multi_gauss_1d function, to be used in fitting the profile
-        Paramaters
+
+        Parameters
         ----------
         params: 1D Array
             List of parameters to define model. The length should be twice
             the number of components in the following pattern:
             [ a_1, sig_1, a_2,sig_2, ....]. Here a_i is the weight of the i'th
-            component and sig_i is the width of the i'th component
-        x_data: 1-D array
-            x_data to be fit, generally self.radius
+            component and sig_i is the width of the i'th component.
+        x_data : 1-D array
+            x_data to be fit, generally self.radius.
         y_data: 1-D array
             y_data to be fit, genrally self.intens
-         mu: float, Optional
+        mu: float, optional
             The centre of the gaussian distribution, default is 0.
+
         Returns
         -------
-        log_resid: 1D array
+        resid: 1D array
             log scale residuals between the models specified by 'params' and
             the given y_data
 """
@@ -112,16 +126,17 @@ class PSFFitter():
         to the psf profile. Start with 1D to find the best fit widths and then
         us evaluate chi2 in 2D
 
-        Paramaters
+        Parameters
         ----------
         N: Int
             Number of gaussian to us in fit
-        Init guess: array, optional
-            Initial guess at parameters, if None will set Default based on N
-        frac_cutoff: float
+        frac_cutoff: float, optional
             Fraction of max, below which to not fit. This is done to focus
             on the center of the PSF and not the edges. Important because
             we using the log-residuals
+        plot: bool
+            Whether or not to show summary plot
+
         Returns
         -------
         a_fit: 1-D array
@@ -187,7 +202,7 @@ class PSFFitter():
     def fit_1D(self,N, init_guess = None,frac_cutoff = 1e-4):
         """ Fit a 1-D Multi Gaussian Model to the psf profile
 
-        Paramaters
+        Parameters
         ----------
         N: Int
             Number of gaussian to us in fit
@@ -197,6 +212,7 @@ class PSFFitter():
             Fraction of max, below which to not fit. This is done to focus
             on the center of the PSF and not the edges. Important because
             we using the log-residuals
+
         Returns
         -------
         a_fit: 1-D array
@@ -220,20 +236,21 @@ class PSFFitter():
         sig_fit = ls_res_cur.x[1::2]
         return a_fit, sig_fit, np.sum((ls_res_cur.fun)**2)
 
-    def auto_fit(self, N_max = 5, frac_cutoff = 1e-4,norm_a = True, show_fig = True):
+    def auto_fit(self, N_max = 5, frac_cutoff = 1e-4,norm_a = True):
         """ Function used for automatic fitting of PSF. First using a 1-D fit to find
     the smallest acceptable number of Gaussians and the corresponding widths,
     then using these widths to fit in 2D and find the weights.
-    Paramaters
+
+    Parameters
     ----------
     N: Int
         Number of gaussian to us in fit
-    Init guess: array, optional
-        Initial guess at parameters, if None will set Default based on N
     frac_cutoff: float
         Fraction of max, below which to not fit. This is done to focus
         on the center of the PSF and not the edges. Important because
         we using the log-residuals
+    norm_a: Bool
+        Wheter or not to normize the resulting weight so that the sum is unity
 
     Returns
     -------
