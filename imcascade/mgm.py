@@ -168,6 +168,7 @@ class MultiGaussModel():
 
     def get_sky_model(self,args):
         """ Function used to calculate tilted-plane sky model
+
         Parameters
         ----------
         args: (a,b,c) (float,float,float)
@@ -178,7 +179,7 @@ class MultiGaussModel():
         Returns
         -------
         sky_model: 2D Array
-        Model for sky background based on given parameters, same shape as 'shape'
+            Model for sky background based on given parameters, same shape as 'shape'
 """
         a,b,c = args
 
@@ -262,6 +263,24 @@ class MultiGaussModel():
 
 
 def rot_im(img,phi,x0,y0):
+    """Function to rotate image around a given point
+    
+    Parameters
+    ----------
+    img: 2D array
+        Image to be rotated
+    phi: Float
+        angle to rotate image
+    x0: Float
+        x coordinate to rotate image around
+    y0: Float
+        y coordinate to rotate image around
+
+    Returns
+    -------
+    2D array
+        rotated image
+"""
     xc,yc = img.shape
     xc *= 0.5
     yc *= 0.5
@@ -352,6 +371,7 @@ def _erf_approx(x):
 @njit
 def _get_hybrid_stack(x0, y0,final_q, final_a, final_var, im_args):
     """ Wrapper Function used to calculate render model using the hybrid method
+
         Parameters
         ----------
         x0: float

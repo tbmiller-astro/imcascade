@@ -1,7 +1,7 @@
 Installation
 ============
 
-The source code for ``imcascade`` is stored in the github repo: https://github.com/tbmiller-astro/imcascade
+The source code for ``imcascade`` is stored on `github <https://github.com/tbmiller-astro/imcascade>`_
 
 To install ``imcascade`` simply clone the github repo and run the setup.py install script
 

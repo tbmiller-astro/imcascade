@@ -20,10 +20,9 @@ vars_to_use = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss',
  'posterier', 'post_method','log_file', 'logz','logz_err']
 
 class ImcascadeResults():
-    """A class used for collating imcascade results and performing analysis"""
-    def __init__(self, Obj, thin_posterier = 1):
-        """Initialize a Task instance
-        Paramaters
+    """A class used for collating imcascade results and performing analysis
+
+        Parameters
         ----------
         Obj: imcascade.fitter.Fitter class, dictionary or str
             Object which contains the data to be analyzed. Can be a Fitter object
@@ -38,6 +37,9 @@ class ImcascadeResults():
             to ensure the posterier is large enough, some of this analysis can
             take time if you have >10^6 samples so this is one way to speed up
             this task but use with caution.
+"""
+    def __init__(self, Obj, thin_posterier = 1):
+        """Initialize a Task instance
 """
         if type(Obj) == imcascade.fitter.Fitter:
             self.obj_type = 'class'
@@ -80,11 +82,13 @@ class ImcascadeResults():
 
     def calc_flux(self, cutoff = None):
         """Calculate flux of given results
-        Paramaters
+
+        Parameters
         ----------
         cutoff: float (optional)
             Radius out to which to consider the profile. Generally this should be
             around the half-width of the image or the largest gaussian width use
+
         Returns
         -------
         Flux: float or Array
@@ -99,7 +103,8 @@ class ImcascadeResults():
 
     def _min_calc_rX(self,X,cutoff = None):
         """Old and slow Function to calculate the radius containing X percent of the light
-        Paramaters
+
+        Parameters
         ----------
         X: float
             Fractional radius of intrest to calculate. if X < 1 will take as a fraction,
@@ -108,6 +113,7 @@ class ImcascadeResults():
         cutoff: float (optional)
             Radius out to which to consider the profile. Generally this should be
             around the half-width of the image or the largest gaussian width used
+
         Returns
         -------
         r_X: float or Array
@@ -126,7 +132,8 @@ class ImcascadeResults():
 
     def calc_rX(self,X,cutoff = None):
         """Function to calculate the radius containing X percent of the light
-        Paramaters
+
+        Parameters
         ----------
         X: float
             Fractional radius of intrest to calculate. if X < 1 will take as a fraction,
@@ -135,6 +142,7 @@ class ImcascadeResults():
         cutoff: float (optional)
             Radius out to which to consider the profile. Generally this should be
             around the half-width of the image or the largest gaussian width used
+
         Returns
         -------
         r_X: float or Array
@@ -184,11 +192,12 @@ class ImcascadeResults():
     def calc_r90(self,cutoff = None):
         """Wrapper function to calculate the radius containing 90% of the light
 
-        Paramaters
+        Parameters
         ----------
         cutoff: float (optional)
             Radius out to which to consider the profile. Generally this should be
             around the half-width of the image or the largest gaussian width use
+
         Returns
         -------
         r_90: float or Array
@@ -201,11 +210,12 @@ class ImcascadeResults():
     def calc_r80(self,cutoff = None):
         """Wrapper function to calculate the radius containing 80% of the light
 
-        Paramaters
+        Parameters
         ----------
         cutoff: float (optional)
             Radius out to which to consider the profile. Generally this should be
             around the half-width of the image or the largest gaussian width use
+
         Returns
         -------
         r_80: float or Array
@@ -219,11 +229,12 @@ class ImcascadeResults():
         """Wrapper function to calculate the radius containing 50% of the light,
         or the effective radius
 
-        Paramaters
+        Parameters
         ----------
         cutoff: float (optional)
             Radius out to which to consider the profile. Generally this should be
             around the half-width of the image or the largest gaussian width use
+
         Returns
         -------
         r_50: float or Array
@@ -236,11 +247,12 @@ class ImcascadeResults():
     def calc_r20(self,cutoff = None):
         """Wrapper function to calculate the radius containing 20% of the light
 
-        Paramaters
+        Parameters
         ----------
         cutoff: float (optional)
             Radius out to which to consider the profile. Generally this should be
             around the half-width of the image or the largest gaussian width use
+
         Returns
         -------
         r_20: float or Array
@@ -252,7 +264,8 @@ class ImcascadeResults():
 
     def calc_sbp(self,r, return_ind = False):
         """Function to calculate surface brightness profiles for the given results
-        Paramaters
+
+        Parameters
         ----------
         r: float or array
             Radii (in pixels) at which to evaluate the surface brightness profile
@@ -260,6 +273,7 @@ class ImcascadeResults():
             If False will only return the sum of all gaussian, i.e. the best fit profile.
             If true will return an array with +1 dimensions containing the profiles
             of each individual gaussian component
+
         Returns
         -------
         SBP: array
@@ -286,7 +300,8 @@ class ImcascadeResults():
 
     def calc_obs_sbp(self, r, return_ind = False):
         """Function to calculate the observed surface brightness profiles, i.e. convolved with the PSF for the given results
-        Paramaters
+
+        Parameters
         ----------
         r: float or array
             Radii (in pixels) at which to evaluate the surface brightness profile
@@ -295,6 +310,7 @@ class ImcascadeResults():
             If False will only return the sum of all gaussian, i.e. the best fit profile.
             If true will return an array with +1 dimensions containing the profiles
             of each individual gaussian component
+
         Returns
         -------
         obsereved SBP: array
@@ -336,7 +352,8 @@ class ImcascadeResults():
 
     def calc_cog(self, r, return_ind = False, norm = False, cutoff = None):
         """Function to calculate curves-of-growth for the given results
-        Paramaters
+
+        Parameters
         ----------
         r: float or array
             Radii (in pixels) at which to evaluate the surface brightness profile
@@ -349,6 +366,7 @@ class ImcascadeResults():
             'self.calc_flux'. Does nothing if 'return_ind = True'
         cutoff: Float (optional)
             Cutoff radius used in 'self.calc_flux', only is used if 'norm' is True
+
         Returns
         -------
         COG: array
@@ -373,7 +391,7 @@ class ImcascadeResults():
     def calc_obs_cog(self, r, return_ind = False, norm = False, cutoff = None):
         """Function to calculate the observed curve of growth, i.e. convolved with the PSF for the given results
 
-        Paramaters
+        Parameters
         ----------
         r: float or array
             Radii (in pixels) at which to evaluate the surface brightness profile
@@ -386,6 +404,7 @@ class ImcascadeResults():
             'self.calc_flux'. Does nothing if 'return_ind = True'
         cutoff: Float (optional)
             Cutoff radius used in 'self.calc_flux', only is used if 'norm' is True
+
         Returns
         -------
         observed COG: array
@@ -431,7 +450,8 @@ class ImcascadeResults():
     def run_basic_analysis(self, zpt = None, cutoff = None, errp_lo = 16, errp_hi =84,\
       save_results = False, save_file = './imcascade_results.asdf'):
         """Function to calculate a set of common variables and save the save the results
-        Paramaters
+
+        Parameters
         ----------
         zpt: float (optional)
             photometric zeropoint for the data. if not 'None', will also calculate
@@ -513,8 +533,7 @@ class ImcascadeResults():
 
 
 class MultiResults():
-    ''' A Class to analyze and combine multiple ImcascadeResults classes using evidence weighting
-    '''
+    ''' A Class to analyze and combine multiple ImcascadeResults classes using evidence weighting'''
     def __init__(self, lofr):
         self.lofr = lofr
         self.num_res = len(lofr)
