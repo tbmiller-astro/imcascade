@@ -1,0 +1,315 @@
+:mod:`imcascade.results`
+========================
+
+.. py:module:: imcascade.results
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   imcascade.results.ImcascadeResults
+   imcascade.results.MultiResults
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   imcascade.results.calc_flux_input
+   imcascade.results.r_root_func
+
+
+
+Attributes
+~~~~~~~~~~
+
+.. autoapisummary::
+
+   imcascade.results.vars_to_use
+
+
+.. function:: calc_flux_input(weights, sig, cutoff=None)
+
+
+.. function:: r_root_func(r, f_L, weights, sig, cutoff)
+
+
+.. data:: vars_to_use
+   :annotation: = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss', 'has_psf', 'psf_a',...
+
+   
+
+.. class:: ImcascadeResults(Obj, thin_posterier=1)
+
+
+   A class used for collating imcascade results and performing analysis
+
+   :param Obj: Object which contains the data to be analyzed. Can be a Fitter object
+               once the run_(ls_min,dynesty, emcee) has been ran. If it is a dictionay
+               needs to contain, at bare minmum the variables sig, Ndof, Ndof_sky,
+               Ndof_gauss, log_weight_scale and either min_param or posterier.
+               If a string is passed it will be interreted as a file locations with
+               an ASDF file containing the neccesary information.
+   :type Obj: imcascade.fitter.Fitter class, dictionary or str
+   :param thin_posterier: Factor by which to thin the posterier distribution by. While one wants
+                          to ensure the posterier is large enough, some of this analysis can
+                          take time if you have >10^6 samples so this is one way to speed up
+                          this task but use with caution.
+   :type thin_posterier: int (optional)
+
+   .. method:: calc_flux(self, cutoff=None)
+
+      Calculate flux of given results
+
+      :param cutoff: Radius out to which to consider the profile. Generally this should be
+                     around the half-width of the image or the largest gaussian width use
+      :type cutoff: float (optional)
+
+      :returns: **Flux** -- Total flux of best fit model
+      :rtype: float or Array
+
+
+   .. method:: _min_calc_rX(self, X, cutoff=None)
+
+      Old and slow Function to calculate the radius containing X percent of the light
+
+      :param X: Fractional radius of intrest to calculate. if X < 1 will take as a fraction,
+                else will interpret as percent and divide X by 100. i.e. to calculate
+                the radius containing 20% of the light, once can either pass X = 20 or 0.2
+      :type X: float
+      :param cutoff: Radius out to which to consider the profile. Generally this should be
+                     around the half-width of the image or the largest gaussian width used
+      :type cutoff: float (optional)
+
+      :returns: **r_X** -- The radius containg X percent of the light
+      :rtype: float or Array
+
+
+   .. method:: calc_rX(self, X, cutoff=None)
+
+      Function to calculate the radius containing X percent of the light
+
+      :param X: Fractional radius of intrest to calculate. if X < 1 will take as a fraction,
+                else will interpret as percent and divide X by 100. i.e. to calculate
+                the radius containing 20% of the light, once can either pass X = 20 or 0.2
+      :type X: float
+      :param cutoff: Radius out to which to consider the profile. Generally this should be
+                     around the half-width of the image or the largest gaussian width used
+      :type cutoff: float (optional)
+
+      :returns: **r_X** -- The radius containg X percent of the light
+      :rtype: float or Array
+
+
+   .. method:: calc_r90(self, cutoff=None)
+
+      Wrapper function to calculate the radius containing 90% of the light
+
+      :param cutoff: Radius out to which to consider the profile. Generally this should be
+                     around the half-width of the image or the largest gaussian width use
+      :type cutoff: float (optional)
+
+      :returns: **r_90** -- The radius containg 90 percent of the light
+      :rtype: float or Array
+
+
+   .. method:: calc_r80(self, cutoff=None)
+
+      Wrapper function to calculate the radius containing 80% of the light
+
+      :param cutoff: Radius out to which to consider the profile. Generally this should be
+                     around the half-width of the image or the largest gaussian width use
+      :type cutoff: float (optional)
+
+      :returns: **r_80** -- The radius containg 80 percent of the light
+      :rtype: float or Array
+
+
+   .. method:: calc_r50(self, cutoff=None)
+
+      Wrapper function to calculate the radius containing 50% of the light,
+      or the effective radius
+
+      :param cutoff: Radius out to which to consider the profile. Generally this should be
+                     around the half-width of the image or the largest gaussian width use
+      :type cutoff: float (optional)
+
+      :returns: **r_50** -- The radius containg 50 percent of the light
+      :rtype: float or Array
+
+
+   .. method:: calc_r20(self, cutoff=None)
+
+      Wrapper function to calculate the radius containing 20% of the light
+
+      :param cutoff: Radius out to which to consider the profile. Generally this should be
+                     around the half-width of the image or the largest gaussian width use
+      :type cutoff: float (optional)
+
+      :returns: **r_20** -- The radius containg 20 percent of the light
+      :rtype: float or Array
+
+
+   .. method:: calc_sbp(self, r, return_ind=False)
+
+      Function to calculate surface brightness profiles for the given results
+
+      :param r: Radii (in pixels) at which to evaluate the surface brightness profile
+      :type r: float or array
+      :param return_ind: If False will only return the sum of all gaussian, i.e. the best fit profile.
+                         If true will return an array with +1 dimensions containing the profiles
+                         of each individual gaussian component
+      :type return_ind: bool (optional)
+
+      :returns: **SBP** -- Surface brightness profiles evaluated at 'r'. If 'return_ind = True',
+                returns the profile of each individual gaussian component
+      :rtype: array
+
+
+   .. method:: calc_obs_sbp(self, r, return_ind=False)
+
+      Function to calculate the observed surface brightness profiles, i.e. convolved with the PSF for the given results
+
+      :param r: Radii (in pixels) at which to evaluate the surface brightness profile
+      :type r: float or array
+      :param return_ind: If False will only return the sum of all gaussian, i.e. the best fit profile.
+                         If true will return an array with +1 dimensions containing the profiles
+                         of each individual gaussian component
+      :type return_ind: bool (optional)
+
+      :returns: **obsereved SBP** -- Observed surface brightness profiles evaluated at 'r'. If 'return_ind = True',
+                returns the profile of each individual gaussian component
+      :rtype: array
+
+
+   .. method:: calc_cog(self, r, return_ind=False, norm=False, cutoff=None)
+
+      Function to calculate curves-of-growth for the given results
+
+      :param r: Radii (in pixels) at which to evaluate the surface brightness profile
+      :type r: float or array
+      :param return_ind: If False will only return the sum of all gaussian, i.e. the best fit profile.
+                         If true will return an array with +1 dimensions containing the profiles
+                         of each individual gaussian component
+      :type return_ind: bool (optional)
+      :param norm: Wether to normalize curves-of-growth to total flux, calculated using
+                   'self.calc_flux'. Does nothing if 'return_ind = True'
+      :type norm: Bool (optional)
+      :param cutoff: Cutoff radius used in 'self.calc_flux', only is used if 'norm' is True
+      :type cutoff: Float (optional)
+
+      :returns: **COG** -- curves-of-growth evaluated at 'r'. If 'return_ind = True',
+                returns the profile of each individual gaussian component
+      :rtype: array
+
+
+   .. method:: calc_obs_cog(self, r, return_ind=False, norm=False, cutoff=None)
+
+      Function to calculate the observed curve of growth, i.e. convolved with the PSF for the given results
+
+      :param r: Radii (in pixels) at which to evaluate the surface brightness profile
+      :type r: float or array
+      :param return_ind: If False will only return the sum of all gaussian, i.e. the best fit profile.
+                         If true will return an array with +1 dimensions containing the profiles
+                         of each individual gaussian component
+      :type return_ind: bool (optional)
+      :param norm: Wether to normalize curves-of-growth to total flux, calculated using
+                   'self.calc_flux'. Does nothing if 'return_ind = True'
+      :type norm: Bool (optional)
+      :param cutoff: Cutoff radius used in 'self.calc_flux', only is used if 'norm' is True
+      :type cutoff: Float (optional)
+
+      :returns: **observed COG** -- curves-of-growth evaluated at 'r'. If 'return_ind = True',
+                returns the profile of each individual gaussian component
+      :rtype: array
+
+
+   .. method:: run_basic_analysis(self, zpt=None, cutoff=None, errp_lo=16, errp_hi=84, save_results=False, save_file='./imcascade_results.asdf')
+
+      Function to calculate a set of common variables and save the save the results
+
+      :param zpt: photometric zeropoint for the data. if not 'None', will also calculate
+                  magnitude
+      :type zpt: float (optional)
+      :param cutoff: Radius out to which to consider the profile. Generally this should be
+                     around the half-width of the image or the largest gaussian width use
+      :type cutoff: float (optional)
+      :param errp_(lo,hi): percentiles to be used to calculate the lower and upper error bars from
+                           the posterier distribution. Default is 16 and 84, corresponding to 1-sigma
+                           for a guassian distribtuion
+      :type errp_(lo,hi): float (optional)
+      :param save_results: If true will save results to file. If input is a file, will add
+                           to given file, else will save to file denoted by 'save_file' (see below)
+      :type save_results: bool (optional)
+      :param save_file: String to describe where to save file, only applicaple if the input
+                        is not a file.
+      :type save_file: str
+
+      :returns: **res_dict** -- Dictionary contining the results of the analysis
+      :rtype: dictionary
+
+
+   .. method:: calc_iso_r(self, I, zpt=None, pix_scale=None)
+
+      Function to calculate the isophotal radius
+
+      :param I: Surface brightness target to define the isophotal radii. By defualt this shoud be in
+                image units unless both zpt and pix_scale are given, then I is interpreted as
+                mag per arcsec^2.
+      :type I: float
+      :param zpt: zeropoint magnitude of image, used to convert I to mag per arcsec^2
+      :type zpt: float (optional)
+      :param pix_scale: pixel scale in units of arcseconds/pixel, used to convert I to mag per arcsec^2
+      :type pix_scale: float (optional)
+
+      :returns: **r_I** -- The radius, in pixel units, where the surface brightness profile matches I
+      :rtype: float or Array
+
+
+   .. method:: calc_petro_r(self_cls, P_ratio=0.2, r_fac_min=0.8, r_fac_max=1.25)
+
+      Function to calculate the petrosian radii of a galaxy
+
+      :param P_ratio: The Petrosian ratio which defines the Petrosian radii, default is 0.2
+      :type P_ratio: float (optional)
+      :param r_fac_min: lower multiplicative factor which is used to integrate flux, default 0.8
+      :type r_fac_min: float (optional)
+      :param r_fac_max: higher multiplicative factor which is used to inegrate flux, default 1.25
+      :type r_fac_max: float (optional)
+
+      :returns: **r_I** -- The radius, in pixel units, where the surface brightness profile matches I
+      :rtype: float or Array
+
+
+
+.. class:: MultiResults(lofr)
+
+
+   A Class to analyze and combine multiple ImcascadeResults classes using evidence weighting
+
+   .. method:: calc_cog(self, r, num=1000)
+
+
+   .. method:: calc_obs_cog(self, r, num=1000)
+
+
+   .. method:: calc_sbp(self, r, num=1000)
+
+
+   .. method:: calc_obs_sbp(self, r, num=1000)
+
+
+   .. method:: calc_flux(self, cutoff=None, num=1000)
+
+
+   .. method:: calc_rX(self, X, cutoff=None, num=1000)
+
+
+

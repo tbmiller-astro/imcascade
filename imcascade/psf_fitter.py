@@ -265,12 +265,12 @@ radii: 1D array
         sig_min = 0
         a2D_min = 0
         for num_fit in range(1,N_max+1):
-            a_cur,sig_cur,chi2_cur = self.fit_N(num_fit, frac_cutoff = frac_cutoff)
-            if min_diff_array(sig_cur) < 0.75:
-                print ( "Skipping %i, two sigma's close together"%num_fit)
+            sig_cur,a_cur,chi2_cur = self.fit_N(num_fit, frac_cutoff = frac_cutoff)
+            if min_diff_array(sig_cur) < 0.5:
+                #print ( "Skipping %i, two sigma's close together"%num_fit)
                 continue
 
-            print (num_fit, '%.3e'%chi2_cur )
+            #print (num_fit, '%.3e'%chi2_cur )
             if chi2_cur < chi2_min:
                 a_min = a_cur
                 sig_min = sig_cur

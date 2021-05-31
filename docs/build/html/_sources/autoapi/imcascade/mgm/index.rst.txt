@@ -1,0 +1,209 @@
+:mod:`imcascade.mgm`
+====================
+
+.. py:module:: imcascade.mgm
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   imcascade.mgm.MultiGaussModel
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   imcascade.mgm.rot_im
+   imcascade.mgm.get_ellip_conv_params
+   imcascade.mgm._erf_approx
+   imcascade.mgm._get_hybrid_stack
+
+
+
+.. class:: MultiGaussModel(shape, sig, psf_sig, psf_a, verbose=True, sky_model=True, render_mode='hybrid', log_weight_scale=True, psf_shape=None)
+
+
+   A class used to generate models based series of Gaussians
+
+   :param shape: Size of model image to generate
+   :type shape: 2x1 array_like
+   :param sig: Widths of Gaussians used to genrate model
+   :type sig: 1-D array
+   :param psf_sig: Width of Gaussians used to approximate psf
+   :type psf_sig: 1-D array, None
+   :param psf_a: Weights of Gaussians used to approximate psf, must be same length
+                 as 'psf_sig'. If both psf_sig and psf_a are None then will run in
+                 Non-psf mode
+   :type psf_a: 1-D array, None
+   :param verbose: If true will print out errors
+   :type verbose: bool, optional
+   :param sky_model: If True will incorperate a tilted plane sky model
+   :type sky_model: bool, optional
+   :param render_mode: Option to decide how to render models. Default is 'erf' as it computes
+                       the integral over the pixel of each profile therefore is more accurate
+                       but more computationally intensive. 'gauss' assumes the center of a pixel
+                       provides a reasonble estimate of the average flux in that pixel. 'gauss'
+                       is faster but far less accurate for objects with size O(pixel size),
+                       so use with caution.
+   :type render_mode: 'gauss' or 'erf'
+   :param log_weight_scale: Wether to treat weights as log scale, Default True
+   :type log_weight_scale: bool, optional
+
+   .. method:: get_gauss_stack(self, x0, y0, q_arr, a_arr, var_arr)
+
+      Function used to calculate render model using the 'Gauss' method
+
+      :param x0: x position of center
+      :type x0: float
+      :param y0: y position of center
+      :type y0: float
+      :param q_arr: Array of axis ratios
+      :type q_arr: Array
+      :param a_arr: Array of Gaussian Weights
+      :param var_arr: Array of Gassian widths, note this the variance so sig^2
+
+      :returns: **Gauss_model** -- Array representing the model image, same shape as 'shape'
+      :rtype: array
+
+
+   .. method:: get_erf_stack(self, x0, y0, final_q, final_a, final_var)
+
+      Function used to calculate render model using the 'erf' method
+
+      :param x0: x position of center
+      :type x0: float
+      :param y0: y position of the center
+      :type y0: float
+      :param final_q: Array of axis ratios
+      :type final_q: Array
+      :param final_a: Array of Gaussian Weights
+      :type final_a: Array
+      :param final_var: Array of Gassian widths, note this the variance so sig^2
+      :type final_var: Array
+
+      :returns: **erf_model** -- Array representing each rendered component
+      :rtype: array
+
+
+   .. method:: get_hybrid_stack(self, x0, y0, final_q, final_a, final_var)
+
+      Function used to calculate render model using the hybrid method, which uses erf where neccesary to ensure accurate integration and gauss otherwise. Also set everything >5 sigma away to 0.
+
+      :param x0: x position of center
+      :type x0: float
+      :param y0: y position of the center
+      :type y0: float
+      :param final_q: Array of axis ratios
+      :type final_q: Array
+      :param final_a: Array of Gaussian Weights
+      :type final_a: Array
+      :param final_var: Array of Gassian widths, note this the variance so sig^2
+      :type final_var: Array
+
+      :returns: **erf_model** -- Array representing each rendered component
+      :rtype: 3D array
+
+
+   .. method:: get_sky_model(self, args)
+
+      Function used to calculate tilted-plane sky model
+
+      :param args: a - overall normalization
+                   b - slope in x direction
+                   c - slope in y direction
+      :type args: (a,b,c) (float,float,float)
+
+      :returns: **sky_model** -- Model for sky background based on given parameters, same shape as 'shape'
+      :rtype: 2D Array
+
+
+   .. method:: make_model(self, param, return_stack=False)
+
+      Function to generate model image based on given paramters array.
+      This version assumaes the gaussian weights are given in linear scale
+
+      :param param: 1-D array containing all the Parameters
+      :type param: array
+
+      :returns: **model_image** -- Generated model image as the sum of all components plus sky, if included
+      :rtype: 2D Array
+
+
+
+.. function:: rot_im(img, phi, x0, y0)
+
+   Function to rotate image around a given point
+
+   :param img: Image to be rotated
+   :type img: 2D array
+   :param phi: angle to rotate image
+   :type phi: Float
+   :param x0: x coordinate to rotate image around
+   :type x0: Float
+   :param y0: y coordinate to rotate image around
+   :type y0: Float
+
+   :returns: rotated image
+   :rtype: 2D array
+
+
+.. function:: get_ellip_conv_params(var_all, q, phi, psf_var_all, psf_q, psf_phi)
+
+   Function used to derrive the observed Gaussian Parameters for a non-circular PSF
+
+   :param var: Variances of Gaussian components
+   :type var: array
+   :param q: Axis ratio of Galaxy
+   :type q: Float
+   :param phi: PA of galaxy
+   :type phi: Float
+   :param psf_var_all: Variances of PSF gaussian decomposition
+   :type psf_var_all: array
+   :param psf_q: Axis ratio of PSF
+   :type psf_q: float
+   :param psf_phi:
+   :type psf_phi: PA of PSF
+
+   :returns: * **obs_var** (*array*) -- Array of variances for the components of the convolved gaussian model
+             * **obs_phi** (*array*) -- Array of position angles for the components of the convolved gaussian model
+             * **obs_q** (*array*) -- Array of axis ratios for the components of the convolved gaussian model
+
+
+.. function:: _erf_approx(x)
+
+   Approximate erf function for use with numba
+
+   :param x: value
+   :type x: scalar
+
+   :returns:
+   :rtype: Approximation of erf(x)
+
+
+.. function:: _get_hybrid_stack(x0, y0, final_q, final_a, final_var, im_args)
+
+   Wrapper Function used to calculate render model using the hybrid method
+
+   :param x0: x position of center
+   :type x0: float
+   :param y0: y position of the center
+   :type y0: float
+   :param final_q: Array of axis ratios
+   :type final_q: Array
+   :param final_a: Array of Gaussian Weights
+   :param final_var: Array of Gassian widths, note this the variance so sig^2
+   :param return_stack: If True returns an image for each individual gaussian
+   :type return_stack: Bool, optional
+
+   :returns: **erf_model** -- Array representing the model image, same shape as 'shape'
+   :rtype: array
+
+

@@ -1,0 +1,654 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>imcascade.fitter &mdash; imcascade 0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> imcascade
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">In-depth example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../adv_guide.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">API Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">imcascade</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">imcascade.fitter</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../_sources/autoapi/imcascade/fitter/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="module-imcascade.fitter">
+<span id="imcascade-fitter"></span><h1><a class="reference internal" href="#module-imcascade.fitter" title="imcascade.fitter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">imcascade.fitter</span></code></a><a class="headerlink" href="#module-imcascade.fitter" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#imcascade.fitter.Fitter" title="imcascade.fitter.Fitter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Fitter</span></code></a></p></td>
+<td><p>A Class used fit images with MultiGaussModel</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#imcascade.fitter.fitter_from_ASDF" title="imcascade.fitter.fitter_from_ASDF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fitter_from_ASDF</span></code></a>(file_name, init_dict={}, bounds_dict={})</p></td>
+<td><p>Function used to initalize a fitter from a saved asdf file</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#imcascade.fitter.initialize_fitter" title="imcascade.fitter.initialize_fitter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialize_fitter</span></code></a>(im, psf, mask=None, err=None, x0=None, y0=None, re=None, flux=None, psf_oversamp=1, sky_model=True, log_file=None, readnoise=None, gain=None, exp_time=None)</p></td>
+<td><p>Function used to help Initialize Fitter instance from simple inputs</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#imcascade.fitter.log2pi" title="imcascade.fitter.log2pi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log2pi</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py data">
+<dt class="sig sig-object py" id="imcascade.fitter.log2pi">
+<span class="sig-prename descclassname"><span class="pre">imcascade.fitter.</span></span><span class="sig-name descname"><span class="pre">log2pi</span></span><a class="headerlink" href="#imcascade.fitter.log2pi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="imcascade.fitter.fitter_from_ASDF">
+<span class="sig-prename descclassname"><span class="pre">imcascade.fitter.</span></span><span class="sig-name descname"><span class="pre">fitter_from_ASDF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.fitter_from_ASDF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to initalize a fitter from a saved asdf file</p>
+<p>This can be useful for re-running or for initializing a series
+of galaxies beforehand and then transferring to somewhere else or running in
+parallel</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_name</strong> (<em>str</em>) – location of asdf file containing saved data. Often this is a file created
+by Fitter.save_results</p></li>
+<li><p><strong>init_dict</strong> (<em>dict</em><em> (</em><em>optional</em><em>)</em>) – Dictionary specifying initial guesses for least_squares fitting to be passed
+to Fitter instance.</p></li>
+<li><p><strong>bounds_dict</strong> (<em>dict</em><em> (</em><em>optional</em><em>)</em>) – Dictionary specifying bounds for least_squares fitting to be passed
+to Fitter instance.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">imcascade.fitter.</span></span><span class="sig-name descname"><span class="pre">Fitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sky_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">render_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_weight_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../mgm/index.html#imcascade.mgm.MultiGaussModel" title="imcascade.mgm.MultiGaussModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">imcascade.mgm.MultiGaussModel</span></code></a></p>
+<p>A Class used fit images with MultiGaussModel</p>
+<p>This is the main class used to fit <code class="docutils literal notranslate"><span class="pre">imcascade</span></code> models</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>img</strong> (<em>2D Array</em>) – Data to be fit, it is assumed to be a cutout with the object of interest
+in the center of the image</p></li>
+<li><p><strong>sig</strong> (<em>1D Array</em>) – Widths of Gaussians to be used in MultiGaussModel</p></li>
+<li><p><strong>psf_sig</strong> (<em>1D array</em><em>, </em><em>None</em>) – Width of Gaussians used to approximate psf</p></li>
+<li><p><strong>psf_a</strong> (<em>1D array</em><em>, </em><em>None</em>) – Weights of Gaussians used to approximate psf
+If both psf_sig and psf_a are None then will run in Non-psf mode</p></li>
+<li><p><strong>weight</strong> (<em>2D Array</em><em>, </em><em>optional</em>) – Array of pixel by pixel weights to be used in fitting. Must be same
+shape as ‘img’ If None, all the weights will be set to 1.</p></li>
+<li><p><strong>mask</strong> (<em>2D Array</em><em>, </em><em>optional</em>) – Array with the same shape as ‘img’ denoting which, if any, pixels
+to mask  during fitting process. Values of ‘1’ or ‘True’ values for
+the pixels to be masked. If set to ‘None’ then will not mask any
+pixels. In practice, the weights of masked pixels is set to ‘0’.</p></li>
+<li><p><strong>sky_model</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True will incorperate a tilted plane sky model. Reccomended to be set
+to True</p></li>
+<li><p><strong>render_mode</strong> (<em>'hybrid'</em><em>, </em><em>'erf'</em><em> or </em><em>'gauss'</em>) – Option to decide how to render models. ‘erf’ analytically computes
+the integral over the pixel of each profile therefore is more accurate
+but more computationally intensive. ‘gauss’ assumes the center of a pixel
+provides a reasonble estimate of the average flux in that pixel. ‘gauss’
+is faster but far less accurate for objects which vary on O(pixel size),
+so use with caution. ‘hybrid’ is the defualt, uses ‘erf’ for components with width &lt; 5
+to ensure accuracy and uses ‘gauss’ otherwise as it is accurate enough and faster. Also
+assumes all flux &gt; 5 sigma for components is 0.</p></li>
+<li><p><strong>log_weight_scale</strong> (<em>bool</em><em>, </em><em>optional</em>) – Wether to treat weights as log scale, Default True</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If true will log and print out errors</p></li>
+<li><p><strong>psf_shape</strong> (<em>dict</em><em>, </em><em>Optional</em>) – Dictionary containg at ‘q’ and ‘phi’ that define the shape of the PSF.
+Note that this slows down model rendering significantly so only
+reccomended if neccesary.</p></li>
+<li><p><strong>init_dict</strong> (<em>dict</em><em>, </em><em>Optional</em>) – Dictionary specifying initial guesses for least_squares fitting. The code
+is desigined to make ‘intelligent’ guesses if none are provided</p></li>
+<li><p><strong>bounds_dict</strong> (<em>dict</em><em>, </em><em>Optional</em>) – Dictionary specifying boundss for least_squares fitting and priors. The code
+is desigined to make ‘intelligent’ guesses if none are provided</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.resid_1d">
+<span class="sig-name descname"><span class="pre">resid_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.resid_1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a set of parameters returns the 1-D flattened residuals
+when compared to the Data, to be used in run_ls_min Function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>params</strong> (<em>Array</em>) – List of parameters to define model</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>resid_flatten</strong> – 1-D array of the flattened residuals</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.run_ls_min">
+<span class="sig-name descname"><span class="pre">run_ls_min</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ls_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.run_ls_min" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to run a least_squares minimization routine using pre-determined
+inital guesses and bounds.</p>
+<p>Utilizes the scipy least_squares routine (<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html">https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html</a>)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ls_kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Optional list of arguments to be passes to least_squares routine</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>min_res</strong> – Returns an Optimize results class containing the optimized parameters
+along with error and status messages
+(<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html">https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html</a>)
+noteworthy that the best fit parameters are stored in <code class="docutils literal notranslate"><span class="pre">min_res.x</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>scipy.optimize.OptimizeResult</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.set_up_express_run">
+<span class="sig-name descname"><span class="pre">set_up_express_run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.set_up_express_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to set up ‘express’ run using pre-rendered images with a
+fixed x0,y0, phi and q. Sets class attribute ‘express_gauss_arr’ which
+is needed to run dynesty or emcee in express mode</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>set_params</strong> (<em>len</em><em>(</em><em>4</em><em>) </em><em>array-like</em><em>, </em><em>optional</em>) – Parameters (x0,y0,q,phi) to use to per-render images. If None will
+call <code class="docutils literal notranslate"><span class="pre">run_ls_min()</span></code> or use stored <code class="docutils literal notranslate"><span class="pre">min_res</span></code> to find parameters.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>express_gauss_arr</strong> – Returns a 3-D with pre-rendered images based on input parameters</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array (shape[0],shape[1], Ndof_gauss)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.chi_sq">
+<span class="sig-name descname"><span class="pre">chi_sq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.chi_sq" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to calculate chi_sq for a given set of paramters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>params</strong> (<em>Array</em>) – List of parameters to define model</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>chi^2</strong> – Chi squared statistic for the given set of parameters</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.log_like">
+<span class="sig-name descname"><span class="pre">log_like</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.log_like" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to calculate the log likeliehood for a given set of paramters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>params</strong> (<em>Array</em>) – List of parameters to define model</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>log likeliehood</strong> – log likeliehood for a given set of paramters, defined as -0.5*chi^2</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.ptform">
+<span class="sig-name descname"><span class="pre">ptform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.ptform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prior transformation function to be used in dynesty ‘full’ mode</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>u</strong> (<em>array</em>) – array of random numbers from 0 to 1</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>x</strong> – array containing distribution of parameters from prior</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.log_like_exp">
+<span class="sig-name descname"><span class="pre">log_like_exp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp_params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.log_like_exp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to calculate the log likeliehood for a given set of paramters,
+specifically using the pre-renedered model for the ‘express’ mode</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>exo_params</strong> (<em>Array</em>) – List of parameters to define model. Length is Ndof_gauss + Ndof_sky
+since the structural parameters (x0,y0,q, PA) are set</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>log likeliehood</strong> – log likeliehood for a given set of paramters, defined as -0.5*chi^2</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.ptform_exp_ls">
+<span class="sig-name descname"><span class="pre">ptform_exp_ls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.ptform_exp_ls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prior transformation function to be used in dynesty ‘express’ mode using
+gaussian priors defined by the results of the least_squares minimization</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>u</strong> (<em>array</em>) – array of random numbers from 0 to 1</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>x</strong> – array containing distribution of parameters from prior</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.ptform_exp_unif">
+<span class="sig-name descname"><span class="pre">ptform_exp_unif</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.ptform_exp_unif" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prior transformation function to be used in dynesty ‘express’ mode using
+unifrom priors defined by self.lb and self.ub</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>u</strong> (<em>array</em>) – array of random numbers from 0 to 1</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>x</strong> – array containing distribution of parameters from prior</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.log_prior_express">
+<span class="sig-name descname"><span class="pre">log_prior_express</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.log_prior_express" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prior function to be used in emcee ‘express’ mode.
+By default they are all unifrom priors defined by self.lb and self.ub</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>u</strong> (<em>array</em>) – array of random numbers from 0 to 1</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>log prior</strong> – Value of prior for given set of params</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.log_prob_express">
+<span class="sig-name descname"><span class="pre">log_prob_express</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.log_prob_express" title="Permalink to this definition">¶</a></dt>
+<dd><p>Probability function to be used in emcee ‘express’ mode.
+By default they are all unifrom priors defined by self.lb and self.ub</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>u</strong> (<em>array</em>) – array of random numbers from 0 to 1</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>log prob</strong> – Value of log Probability for given set of params</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.run_dynesty">
+<span class="sig-name descname"><span class="pre">run_dynesty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'full'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampler_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_nested_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'min_results'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.run_dynesty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to run dynesty to sample the posterier distribution using either the
+‘full’ methods which explores all paramters, or the ‘express’ method which sets
+the structural parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<em>str: 'full'</em><em> or </em><em>'express'</em>) – Which method to use to run dynesty</p></li>
+<li><p><strong>sampler_kwargs</strong> (<em>dict</em>) – set of keyword arguments to pass the the dynesty DynamicNestedSampler call, see:
+<a class="reference external" href="https://dynesty.readthedocs.io/en/latest/api.html#dynesty.dynesty.DynamicNestedSampler">https://dynesty.readthedocs.io/en/latest/api.html#dynesty.dynesty.DynamicNestedSampler</a></p></li>
+<li><p><strong>run_nested_kwargs</strong> (<em>dict</em>) – set of keyword arguments to pass the the dynesty run_nested call, see:
+<a class="reference external" href="https://dynesty.readthedocs.io/en/latest/api.html#dynesty.dynamicsampler.DynamicSampler.run_nested">https://dynesty.readthedocs.io/en/latest/api.html#dynesty.dynamicsampler.DynamicSampler.run_nested</a></p></li>
+<li><p><strong>prior</strong> (<em>'min_results'</em><em> or </em><em>'uniform'</em>) – Which of the two choices of priors to use. The <cite>min_results</cite> priors are Gaussian,
+with centers defined by the best fit paramters and variance equal to 4 times
+the variance estimated using the Hessian matrix from the run_ls_min() run.
+<cite>uniform</cite> is what it sounds like, uniform priors based on the the lower and upper bounds
+Defualt is <cite>min_results</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Posterior</strong> – Posterier distribution derrived. If method is ‘express’, the first 4 columns,
+containg x0, y0, PA and q, are all the same and equal to values used to pre-render the images</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.run_emcee">
+<span class="sig-name descname"><span class="pre">run_emcee</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'express'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nwalkers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_it</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">int(1000000.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">int(500)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.run_emcee" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not sure if it will stay</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.save_results">
+<span class="sig-name descname"><span class="pre">save_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_basic_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thin_posterier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zpt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errp_lo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errp_hi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">84</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.save_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to save results after run_ls_min, run_dynesty and/or run_emcee is performed. Will be saved as an ASDF file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_name</strong> (<em>str</em>) – Str defining location of where to save data</p></li>
+<li><p><strong>run_basic_analysis</strong> (<em>Bool</em><em> (</em><em>default True</em><em>)</em>) – If true will run ImcascadeResults.run_basic_analysis</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Posterior</strong> – Posterier distribution derrived. If method is ‘express’, the first 4 columns,
+containg x0,y0,PA and q, are all the same and equal to values used to pre-rended the images</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="imcascade.fitter.initialize_fitter">
+<span class="sig-prename descclassname"><span class="pre">imcascade.fitter.</span></span><span class="sig-name descname"><span class="pre">initialize_fitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">im</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">err</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_oversamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sky_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">readnoise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.initialize_fitter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to help Initialize Fitter instance from simple inputs</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>im</strong> (<em>str</em><em> or </em><em>2D Array</em>) – The image or cutout to be fit with imcascade. If a string is given, it is
+interpretted as the location of a fits file with the cutout in it’s first HDU.
+Otherwise is a 2D numpy array of the data to be fit</p></li>
+<li><p><strong>psf</strong> (<em>str</em><em>, </em><em>2D Array</em><em> or </em><em>None</em>) – Similar to above but for the PSF. If not using a PSF, the use None</p></li>
+<li><p><strong>mask</strong> (<em>2D array</em><em> (</em><em>optional</em><em>)</em>) – Sources to be masked when fitting, if none is given then one will be derrived</p></li>
+<li><p><strong>err</strong> (<em>2D array</em><em> (</em><em>optional</em><em>)</em>) – Pixel errors used to calculate the weights when fitting. If none is given will
+use readnoise, gain and exp_time if given, or default to sep derrived rms</p></li>
+<li><p><strong>x0</strong> (<em>float</em><em> (</em><em>optional</em><em>)</em>) – Inital guess at x position of center, if not will assume the center of the image</p></li>
+<li><p><strong>y0</strong> (<em>float</em><em> (</em><em>optional</em><em>)</em>) – Inital guess at y position of center, if not will assume the center of the image</p></li>
+<li><p><strong>re</strong> (<em>float</em><em> (</em><em>optional</em><em>)</em>) – Inital guess at the effective radius of the galaxy, if not given will estimate
+using sep kron radius</p></li>
+<li><p><strong>flux</strong> (<em>float</em><em> (</em><em>optional</em><em>)</em>) – Inital guess at the flux of the galaxy, if not given will estimate
+using sep flux</p></li>
+<li><p><strong>psf_oversamp</strong> (<em>float</em><em> (</em><em>optional</em><em>)</em>) – Oversampling of PSF given, default is 1</p></li>
+<li><p><strong>sky_model</strong> (<em>boolean</em><em> (</em><em>optional</em><em>)</em>) – Whether or not to model sky as tilted-plane, default is True</p></li>
+<li><p><strong>log_file</strong> (<em>str</em><em> (</em><em>optional</em><em>)</em>) – Location of log file</p></li>
+<li><p><strong>readnoise</strong><strong>,</strong><strong>gain</strong><strong>,</strong><strong>exp_time</strong> (<em>float</em><em>,</em><em>float</em><em>,</em><em>float</em><em> (</em><em>all optional</em><em>)</em>) – The read noise (in electrons), gain and exposure time of image that is
+used to calculate the errors and therefore pixel weights. Only used if
+<code class="docutils literal notranslate"><span class="pre">err</span> <span class="pre">=</span> <span class="pre">None</span></code>. If these parameters are also None, then will estimate
+pixel errors using sep rms map.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Fitter</strong> – Returns intialized instance of imcascade.fitter.Fitter which can then
+be used to fit galaxy and analyze results.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#imcascade.fitter.Fitter" title="imcascade.fitter.Fitter">imcascade.fitter.Fitter</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Tim Miller &amp; Pieter van Dokkum.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

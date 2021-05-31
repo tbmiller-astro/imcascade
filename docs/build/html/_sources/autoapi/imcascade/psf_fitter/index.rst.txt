@@ -1,0 +1,155 @@
+:mod:`imcascade.psf_fitter`
+===========================
+
+.. py:module:: imcascade.psf_fitter
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   imcascade.psf_fitter.PSFFitter
+
+
+
+
+.. class:: PSFFitter(psf_img, oversamp=1.0)
+
+
+   A Class used to fit Gaussian models to a PSF image
+
+   :param psf_img: PSF data to be fit. If a string is given will assume it is a fits file
+                   and load the Data in the first HDU. If it is an array then will use
+                   as the PSF image. Either way it is assumed the PSF is centered and image
+                   is square.
+   :type psf_img: str or 2D array
+   :param oversamp: Factor by which the PSF image is oversampled. Default is 1.
+   :type oversamp: Float, optional
+
+   .. attribute:: psf_data
+
+      pixelized PSF data to be fit
+
+      :type: 2D array
+
+   .. attribute:: intens
+
+      1D sbp of PSF
+
+      :type: 1D array
+
+   .. attribute:: radii
+
+      Radii corresponding to ``intens``
+
+      :type: 1D array
+
+   .. method:: calc_profile(self)
+
+      Calculates the 1-D PSF profile in 1 pixel steps assuming it is circular
+
+      :returns: * **intens** (*1D array*) -- Intensity profile.
+                * **radius** (*1D array*) -- radii at which the intensity measuremnts are made.
+
+
+   .. method:: multi_gauss_1d(self, r, *params, mu=0)
+
+      Function used to evaluate a 1-D multi Gaussian model with any number
+      of components
+
+      :param params: List of parameters to define model. The length should be twice the
+                     number of components in the following pattern:[ a_1, sig_1, a_2,sig_2, ....]
+                     where a_i is the weight of the i'th  component and sig_i is the width of the i'th component.
+      :type params: 1D array
+      :param r: Radii at which the profile is to  be evaluated
+      :type r: float, array
+      :param mu: The centre of the gaussian distribution, default is 0
+      :type mu: float, optional
+
+      :returns: The multi-gaussian profile evaluated at 'r'
+      :rtype: 1D array
+
+
+   .. method:: multi_gauss_1d_ls(self, *params, x_data=np.zeros(10), y_data=np.zeros(10), mu=0)
+
+      Wrapper for multi_gauss_1d function, to be used in fitting the profile
+
+      :param params: List of parameters to define model. The length should be twice
+                     the number of components in the following pattern:
+                     [ a_1, sig_1, a_2,sig_2, ....]. Here a_i is the weight of the i'th
+                     component and sig_i is the width of the i'th component.
+      :type params: 1D Array
+      :param x_data: x_data to be fit, generally self.radius.
+      :type x_data: 1-D array
+      :param y_data: y_data to be fit, genrally self.intens
+      :type y_data: 1-D array
+      :param mu: The centre of the gaussian distribution, default is 0.
+      :type mu: float, optional
+
+      :returns: **resid** -- log scale residuals between the models specified by 'params' and
+                the given y_data
+      :rtype: 1D array
+
+
+   .. method:: fit_N(self, N, frac_cutoff=0.0001, plot=False)
+
+      'Fully' Fit a Multi Gaussian Model with a given number of gaussians
+      to the psf profile. Start with 1D to find the best fit widths and then
+      us evaluate chi2 in 2D
+
+      :param N: Number of gaussian to us in fit
+      :type N: Int
+      :param frac_cutoff: Fraction of max, below which to not fit. This is done to focus
+                          on the center of the PSF and not the edges. Important because
+                          we using the log-residuals
+      :type frac_cutoff: float, optional
+      :param plot: Whether or not to show summary plot
+      :type plot: bool
+
+      :returns: * **a_fit** (*1-D array*) -- Best fit Weights, corrected for oversamping
+                * **sig_fit** (*1-D array*) -- Best fit widths, corrected for oversamping
+                * **Chi2** (*Float*) -- The overall chi squared of the fit, computed using the best fit 2D model
+
+
+   .. method:: fit_1D(self, N, init_guess=None, frac_cutoff=0.0001)
+
+      Fit a 1-D Multi Gaussian Model to the psf profile
+
+      :param N: Number of gaussian to us in fit
+      :type N: Int
+      :param Init guess: Initial guess at parameters, if None will set Default based on N
+      :type Init guess: array, optional
+      :param frac_cutoff: Fraction of max, below which to not fit. This is done to focus
+                          on the center of the PSF and not the edges. Important because
+                          we using the log-residuals
+      :type frac_cutoff: float
+
+      :returns: * **a_fit** (*1-D array*) -- Best fit Weights, Not corrected for oversampling
+                * **sig_fit** (*1-D array*) -- Best fit widths, Not corrected for oversampling
+                * **Chi2** (*Float*) -- The overall chi squared of the fit
+
+
+   .. method:: auto_fit(self, N_max=5, frac_cutoff=0.0001, norm_a=True)
+
+      Function used for automatic fitting of PSF. First using a 1-D fit to find
+      the smallest acceptable number of Gaussians and the corresponding widths,
+      then using these widths to fit in 2D and find the weights.
+
+      :param N: Number of gaussian to us in fit
+      :type N: Int
+      :param frac_cutoff: Fraction of max, below which to not fit. This is done to focus
+                          on the center of the PSF and not the edges. Important because
+                          we using the log-residuals
+      :type frac_cutoff: float
+      :param norm_a: Wheter or not to normize the resulting weight so that the sum is unity
+      :type norm_a: Bool
+
+      :returns: * **a_fit** (*1-D array*) -- Best fit Weights
+                * **sig_fit** (*1-D array*) -- Best fit widths
+
+
+

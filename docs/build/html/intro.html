@@ -1,0 +1,278 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Quickstart Guide &mdash; imcascade 0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> imcascade
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">In-depth example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adv_guide.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autoapi/index.html">API Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">imcascade</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Quickstart Guide</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/intro.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="quickstart-guide">
+<h1>Quickstart Guide<a class="headerlink" href="#quickstart-guide" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">imcascade</span></code> is a non-parametric framework for fitting objects in astronomical images. This is accomplished by modelling the objects a series of Gaussians. For full details please read our paper here: <code class="docutils literal notranslate"><span class="pre">Put</span> <span class="pre">ArXiv</span> <span class="pre">link</span> <span class="pre">here</span></code>.</p>
+<p>What follows is a (very) brief introduction to the basic usage of <code class="docutils literal notranslate"><span class="pre">imcascade</span></code>, please read the users guide for a more in depth discussion</p>
+<p>The bare minimum needed to run <code class="docutils literal notranslate"><span class="pre">imcascade</span></code> is</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">img</span></code>: A <code class="docutils literal notranslate"><span class="pre">numpy</span></code> array representing a cutout of an image with the object of interest at the center</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sig</span></code>: The widths of the Gaussian components used to model the galaxy. Generally these are logaritmically spaced from ~1 pixel to ~10 estimated effective radius of the object</p></li>
+</ol>
+<p>The following inputs are technically optional but are very often used when running <code class="docutils literal notranslate"><span class="pre">imcascade</span></code> in a realistic setting,</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">psf_sig</span></code> and <code class="docutils literal notranslate"><span class="pre">psf_a</span></code>: the widths and fluxes for a Gaussian decomposition of the point spread function</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">weight</span></code>: A <code class="docutils literal notranslate"><span class="pre">numpy</span></code> array containing the pixel by pixel weights used in the fitting, usually the inverse variance.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mask</span></code>: A <code class="docutils literal notranslate"><span class="pre">numpy</span></code> array containing the pixel mask, i.e. neighbouring sources that should not be included.</p></li>
+</ol>
+<p>Once these inputs have been assembled a <code class="docutils literal notranslate"><span class="pre">Fitter</span></code> instance  can be initialized. This class contains methods to run chi squared minimization and Bayesian inference,</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">imcascade</span> <span class="kn">import</span> <span class="n">Fitter</span>
+
+<span class="n">fitter</span> <span class="o">=</span> <span class="n">Fitter</span><span class="p">(</span><span class="n">img</span><span class="p">,</span><span class="n">sig</span><span class="p">,</span><span class="n">psf_sig</span><span class="p">,</span><span class="n">psf_a</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="p">)</span>
+
+<span class="n">fitter</span><span class="o">.</span><span class="n">run_ls_min</span><span class="p">()</span> <span class="c1">#To run chi^2 minmization</span>
+
+<span class="c1">### or</span>
+
+<span class="n">fitter</span><span class="o">.</span><span class="n">run_dynesty</span><span class="p">(</span><span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;express&#39;</span><span class="p">)</span> <span class="c1">#For Bayesian inference</span>
+
+<span class="n">fitter</span><span class="o">.</span><span class="n">save_results</span><span class="p">(</span><span class="s1">&#39;./my_imcascade_results.asdf&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The analysis of results from <code class="docutils literal notranslate"><span class="pre">imcascade</span></code> is non-trivial as the free parameters are the fluxes of each Gaussian component, which do not easily map to common morphological quantities of interest. Therefore we have included the <code class="docutils literal notranslate"><span class="pre">ImcascadeResults</span></code> class to help with the analysis</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">imcascade</span> <span class="kn">import</span> <span class="n">ImcascadeResults</span>
+
+<span class="n">res</span> <span class="o">=</span> <span class="n">ImcascadeResults</span><span class="p">(</span><span class="n">fitter</span><span class="p">)</span>
+<span class="c1">#Can give Fitter instance to initialize after calling run_ls_min or run_dynesty</span>
+
+<span class="c1"># Alternatively can initialize using a saved file</span>
+<span class="c1"># &gt;&gt;&gt; res = ImcascadeResults(&#39;./my_imcascade_results.asdf&#39;)</span>
+
+<span class="n">basic_quantities</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">run_basic_analysis</span><span class="p">()</span>
+<span class="c1">#calculates total flux, effective radius and other commonly used quantities</span>
+</pre></div>
+</div>
+<p>Additionally <code class="docutils literal notranslate"><span class="pre">ImcascadeResuts</span></code> contaains other methods to caluclate the recovered surface brightness profile, curve-of-growth and others</p>
+<p>And with that you have fit your first object using imcascade!! Please see the In depth example page to see a much more detailed example or the advanced guide for a discussion of more advanceded features.</p>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Tim Miller &amp; Pieter van Dokkum.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

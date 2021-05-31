@@ -530,7 +530,127 @@ class ImcascadeResults():
 
         return res_dict
 
+    def calc_iso_r(self,I, zpt = None, pix_scale = None):
+        """Function to calculate the isophotal radius
 
+        Parameters
+        ----------
+        I: float
+            Surface brightness target to define the isophotal radii. By defualt this shoud be in
+            image units unless both zpt and pix_scale are given, then I is interpreted as
+            mag per arcsec^2.
+        zpt: float (optional)
+            zeropoint magnitude of image, used to convert I to mag per arcsec^2
+        pix_scale: float (optional)
+            pixel scale in units of arcseconds/pixel, used to convert I to mag per arcsec^2
+
+        Returns
+        -------
+        r_I: float or Array
+            The radius, in pixel units, where the surface brightness profile matches I
+"""
+        #Calculate sbp
+        r = np.linspace(0,np.max(self.sig)*1.5, num = 150)
+        sbp = self.calc_sbp(r)
+
+        if zpt is None and  pix_scale is None:
+            I_target = I
+        elif zpt is None or pix_scale is None:
+            print ('Need zpt and pix_scale to calculate mag per arcsec^2')
+            return 0
+        else:
+            I_target = 10**( (I - zpt)/-2.5)*pix_scale**2
+
+        #locate Area near target
+        arg_min = np.argmin(np.abs(sbp - I_target), axis = 0 )
+
+
+        #Use 2nd degree polynomical interpolation to calculate target radius
+        # When compared more accurate but slower root finding, accurate ~1e-4 %, more then good enough
+        if self.weights.ndim == 1:
+            if arg_min == 149: arg_min -= 1
+            if arg_min ==0: arg_min += 1
+
+            I_0 = sbp[arg_min -1]
+            I_1 = sbp[arg_min]
+            I_2 = sbp[arg_min + 1]
+
+        if self.weights.ndim == 2:
+            arg_min[arg_min == 149] = 148
+            arg_min[arg_min == 0] = 1
+
+            I_0 = sbp[arg_min -1,np.arange(sbp.shape[1])]
+            I_1 = sbp[arg_min,np.arange(sbp.shape[1])]
+            I_2 = sbp[arg_min + 1,np.arange(sbp.shape[1])]
+
+
+        r_0 = r[arg_min - 1]
+        r_1 =  r[arg_min]
+        r_2 = r[arg_min + 1 ]
+
+        r_target = (I_target - I_1)*(I_target - I_2)/(I_0 - I_1)/(I_0 - I_2)*r_0
+        r_target += (I_target - I_0)*(I_target - I_2)/(I_1 - I_0)/(I_1 - I_2)*r_1
+        r_target += (I_target - I_0)*(I_target - I_1)/(I_2 - I_0)/(I_2 - I_1)*r_2
+
+        return r_target
+
+    def calc_petro_r(self_cls, P_ratio = 0.2, r_fac_min = 0.8, r_fac_max = 1.25):
+        """Function to calculate the petrosian radii of a galaxy
+
+        Parameters
+        ----------
+        P_ratio: float (optional)
+            The Petrosian ratio which defines the Petrosian radii, default is 0.2
+        r_fac_min: float (optional)
+            lower multiplicative factor which is used to integrate flux, default 0.8
+        r_fac_max: float (optional)
+            higher multiplicative factor which is used to inegrate flux, default 1.25
+
+        Returns
+        -------
+        r_I: float or Array
+            The radius, in pixel units, where the surface brightness profile matches I
+"""
+        #Calculate sbp
+        r = np.linspace(0.1,np.max(self_cls.sig)*1.5, num = 150)
+
+        cog_lo = self_cls.calc_cog(r*r_fac_min)
+        cog_md = self_cls.calc_cog(r)
+        cog_hi = self_cls.calc_cog(r*r_fac_max)
+
+        ratio = (cog_hi - cog_lo)/cog_md / (r_fac_max**2 - r_fac_min**2)
+
+        #locate Area near target
+        arg_min = np.argmin(np.abs(ratio - P_ratio), axis = 0 )
+
+
+        #Use 2nd degree polynomical interpolation to calculate target radius
+        if self_cls.weights.ndim == 1:
+            if arg_min == 149: arg_min -= 1
+            if arg_min ==0: arg_min += 1
+
+            I_0 = ratio[arg_min -1]
+            I_1 = ratio[arg_min]
+            I_2 = ratio[arg_min + 1]
+
+        if self_cls.weights.ndim == 2:
+            arg_min[arg_min == 149] = 148
+            arg_min[arg_min == 0] = 1
+
+            I_0 = ratio[arg_min -1,np.arange(ratio.shape[1])]
+            I_1 = ratio[arg_min,np.arange(ratio.shape[1])]
+            I_2 = ratio[arg_min + 1,np.arange(ratio.shape[1])]
+
+
+        r_0 = r[arg_min - 1]
+        r_1 =  r[arg_min]
+        r_2 = r[arg_min + 1 ]
+
+        r_target = (P_ratio - I_1)*(P_ratio - I_2)/(I_0 - I_1)/(I_0 - I_2)*r_0
+        r_target += (P_ratio - I_0)*(P_ratio - I_2)/(I_1 - I_0)/(I_1 - I_2)*r_1
+        r_target += (P_ratio - I_0)*(P_ratio - I_1)/(I_2 - I_0)/(I_2 - I_1)*r_2
+
+        return r_target
 
 class MultiResults():
     ''' A Class to analyze and combine multiple ImcascadeResults classes using evidence weighting'''

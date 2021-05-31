@@ -1,0 +1,315 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Advanced &mdash; imcascade 0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "document", "processHtmlClass": "math|output_area"}}</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="In-depth example" href="example.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> imcascade
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">In-depth example</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Advanced</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#adjusting-inital-values-and-bounds">Adjusting inital values and bounds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fitting-options">Fitting options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#model-averaging">Model averaging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#non-circular-psf">Non-circular PSF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#changing-the-liklihood-function">Changing the liklihood function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#changing-the-priors">Changing the Priors</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="autoapi/index.html">API Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">imcascade</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Advanced</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/adv_guide.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="advanced">
+<h1>Advanced<a class="headerlink" href="#advanced" title="Permalink to this headline">¶</a></h1>
+<p>A guide of more advancded and in-depth features and possibilities when runnning <code class="docutils literal notranslate"><span class="pre">imcascade</span></code>. Currently in progress of being written</p>
+<div class="section" id="adjusting-inital-values-and-bounds">
+<h2>Adjusting inital values and bounds<a class="headerlink" href="#adjusting-inital-values-and-bounds" title="Permalink to this headline">¶</a></h2>
+<p>By default <cite>imcascade</cite> attempts to make  ‘’ smart ‘’ guesses for the initial
+values and bounds based on the input variables. These can be easily changed by
+using the <code class="docutils literal notranslate"><span class="pre">init_dict</span></code> or <code class="docutils literal notranslate"><span class="pre">bounds_dict</span></code> arguments when intializing a <code class="docutils literal notranslate"><span class="pre">Fitter</span></code> instance
+These are both dictionaries, with matching keys, that will be discussed below, where each key should match to a
+float for <code class="docutils literal notranslate"><span class="pre">init_dict</span></code> and 2 length tuple or list for <code class="docutils literal notranslate"><span class="pre">bounds_dict</span></code>.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">x_0</span></code> and <code class="docutils literal notranslate"><span class="pre">y_0</span></code> - The central location of the object. By default this intial value is the center of the image and the bounds are +/- 10 pixels</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">phi</span></code> - The position angle in radians, default is <span class="math notranslate nohighlight">\(\pi/2\)</span> with bounds 0 to <span class="math notranslate nohighlight">\(\pi\)</span></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">q</span></code> - The axis ratio initial value is 0.5 and bounds are 0 to 1</p></li>
+</ul>
+<p>The inital values and boudns for the fluxes of each gaussian components can be
+adjusted in several ways. The easist is the specify ‘re’ and ‘flux’ in <code class="docutils literal notranslate"><span class="pre">init_dict</span></code>.
+This uses a polynomial fit to the exponential relationship derrived in
+<a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2013PASP..125..719H/abstract">Hogg &amp; Lang (2013)</a>
+to guess the inital values. This lower bounds on the flux of each component is
+then <span class="math notranslate nohighlight">\(flux/10^5\)</span> (or 0 if using linear weight scaling) and the upper bound is the <code class="docutils literal notranslate"><span class="pre">flux</span></code> value.</p>
+<p>You can also specify using the keys <code class="docutils literal notranslate"><span class="pre">a_max</span></code> and <code class="docutils literal notranslate"><span class="pre">a_min</span></code> in <code class="docutils literal notranslate"><span class="pre">bounds_dict</span></code> to
+directly specify the upper and lower bound for the flux of every component. Note that these need to
+be specified in logarithmic scale if exploring the fluxes in log scale. These will override the bounds discussed above.</p>
+<p>Finally you can specify <code class="docutils literal notranslate"><span class="pre">a_i</span></code>, where i is the component of interest, in
+<code class="docutils literal notranslate"><span class="pre">init_dict</span></code> and <code class="docutils literal notranslate"><span class="pre">bounds_dict</span></code> to make changes to specific components.</p>
+<p>Again these will need to be in logarithmic scale if using <code class="docutils literal notranslate"><span class="pre">log_weight_scale</span> <span class="pre">=</span> <span class="pre">True</span></code></p>
+<p>If you are using the tilted plane sky model, you can additionally specify those parameters</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sky0</span></code> - Overal sky background, estimated as the median of the image</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sky1</span></code> - X slope of sky, estimated using the edges of the image</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sky2</span></code> - Y slope of sky, estimated using the edges of the image</p></li>
+</ul>
+</div>
+<div class="section" id="fitting-options">
+<h2>Fitting options<a class="headerlink" href="#fitting-options" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">imcascade</span></code> utilized previously written routines for the optimization procedures. For the least squares
+minimization we use the ` <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html">scipy.optimize.least_squares</a>
+routine. when using <code class="docutils literal notranslate"><span class="pre">run_ls_min()</span></code> the <code class="docutils literal notranslate"><span class="pre">ls_kwargs</span></code> input can be used to specify keywords to be passed to the <code class="docutils literal notranslate"><span class="pre">least_squares</span></code> function.</p>
+<p>Similarly we implemented <a class="reference external" href="https://dynesty.readthedocs.io/en/latest/">dynesty</a> for Bayesian inference. You can pass arguments through <code class="docutils literal notranslate"><span class="pre">run_dynesty()</span></code>
+for when defining the sampler  using <code class="docutils literal notranslate"><span class="pre">sampler_kwargs</span></code> or running the nested sampling using <code class="docutils literal notranslate"><span class="pre">run_nested_kwargs()</span></code>. Both of these should be dictionaries.</p>
+<p>We have found the default options for both these packages work fairly well however performce can likely be increased by tweaking one or more
+parameters when using these packages.</p>
+</div>
+<div class="section" id="model-averaging">
+<h2>Model averaging<a class="headerlink" href="#model-averaging" title="Permalink to this headline">¶</a></h2>
+<p>As discussed in our paper, a powerful extension of <code class="docutils literal notranslate"><span class="pre">imcascade</span></code> is to run Bayesian inference on a galaxy multiple times with different
+using different set of widths. These can then be combined using a Bayesian model averaging approach. For ease of use we have written a
+class <code class="docutils literal notranslate"><span class="pre">MultiResults</span></code> in the <code class="docutils literal notranslate"><span class="pre">results</span></code> module. The input for this class is a list of <code class="docutils literal notranslate"><span class="pre">ImcascadeResuts</span></code> instances which are meant meant
+to be combined. It contains some (but not all) function contained in <code class="docutils literal notranslate"><span class="pre">ImcascadeResuts</span></code> and calculates the joint posterier distribution of
+these quantities by weighting each model (i.e. set of widths) by their relative evidence. It is important to make sure you are using results
+run on the same images etc. or else it will produce non-sensical results.</p>
+</div>
+<div class="section" id="non-circular-psf">
+<h2>Non-circular PSF<a class="headerlink" href="#non-circular-psf" title="Permalink to this headline">¶</a></h2>
+<p>As a extension to the normal mode with a circular PSF, we have implemented the ability to specify a non-circular PSF. To do this use the
+parameter <code class="docutils literal notranslate"><span class="pre">PSF_shape</span></code> when initializing a <code class="docutils literal notranslate"><span class="pre">Fitter</span></code> instance. This should be a dictionary with the keys <code class="docutils literal notranslate"><span class="pre">q</span></code> for the axis ratio
+and <code class="docutils literal notranslate"><span class="pre">phi</span></code> for the position angle. Currently all components of the psf must have the same shape parameters</p>
+<p>This increases the time to render a model as no each individual component in the observed profile must be rotated individually
+as they will have different position angles. <strong>It has also not been thoroughly tested so use with caution!</strong></p>
+</div>
+<div class="section" id="changing-the-liklihood-function">
+<h2>Changing the liklihood function<a class="headerlink" href="#changing-the-liklihood-function" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="changing-the-priors">
+<h2>Changing the Priors<a class="headerlink" href="#changing-the-priors" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="example.html" class="btn btn-neutral float-left" title="In-depth example" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Tim Miller &amp; Pieter van Dokkum.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

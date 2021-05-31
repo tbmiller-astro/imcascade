@@ -1,0 +1,498 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>imcascade.mgm &mdash; imcascade 0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> imcascade
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">In-depth example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../adv_guide.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">API Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">imcascade</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">imcascade.mgm</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../_sources/autoapi/imcascade/mgm/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="module-imcascade.mgm">
+<span id="imcascade-mgm"></span><h1><a class="reference internal" href="#module-imcascade.mgm" title="imcascade.mgm"><code class="xref py py-mod docutils literal notranslate"><span class="pre">imcascade.mgm</span></code></a><a class="headerlink" href="#module-imcascade.mgm" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#imcascade.mgm.MultiGaussModel" title="imcascade.mgm.MultiGaussModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MultiGaussModel</span></code></a></p></td>
+<td><p>A class used to generate models based series of Gaussians</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#imcascade.mgm.rot_im" title="imcascade.mgm.rot_im"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rot_im</span></code></a>(img, phi, x0, y0)</p></td>
+<td><p>Function to rotate image around a given point</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#imcascade.mgm.get_ellip_conv_params" title="imcascade.mgm.get_ellip_conv_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_ellip_conv_params</span></code></a>(var_all, q, phi, psf_var_all, psf_q, psf_phi)</p></td>
+<td><p>Function used to derrive the observed Gaussian Parameters for a non-circular PSF</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#imcascade.mgm._erf_approx" title="imcascade.mgm._erf_approx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_erf_approx</span></code></a>(x)</p></td>
+<td><p>Approximate erf function for use with numba</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#imcascade.mgm._get_hybrid_stack" title="imcascade.mgm._get_hybrid_stack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_hybrid_stack</span></code></a>(x0, y0, final_q, final_a, final_var, im_args)</p></td>
+<td><p>Wrapper Function used to calculate render model using the hybrid method</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="imcascade.mgm.MultiGaussModel">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">imcascade.mgm.</span></span><span class="sig-name descname"><span class="pre">MultiGaussModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sky_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">render_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_weight_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.MultiGaussModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class used to generate models based series of Gaussians</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>2x1 array_like</em>) – Size of model image to generate</p></li>
+<li><p><strong>sig</strong> (<em>1-D array</em>) – Widths of Gaussians used to genrate model</p></li>
+<li><p><strong>psf_sig</strong> (<em>1-D array</em><em>, </em><em>None</em>) – Width of Gaussians used to approximate psf</p></li>
+<li><p><strong>psf_a</strong> (<em>1-D array</em><em>, </em><em>None</em>) – Weights of Gaussians used to approximate psf, must be same length
+as ‘psf_sig’. If both psf_sig and psf_a are None then will run in
+Non-psf mode</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If true will print out errors</p></li>
+<li><p><strong>sky_model</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True will incorperate a tilted plane sky model</p></li>
+<li><p><strong>render_mode</strong> (<em>'gauss'</em><em> or </em><em>'erf'</em>) – Option to decide how to render models. Default is ‘erf’ as it computes
+the integral over the pixel of each profile therefore is more accurate
+but more computationally intensive. ‘gauss’ assumes the center of a pixel
+provides a reasonble estimate of the average flux in that pixel. ‘gauss’
+is faster but far less accurate for objects with size O(pixel size),
+so use with caution.</p></li>
+<li><p><strong>log_weight_scale</strong> (<em>bool</em><em>, </em><em>optional</em>) – Wether to treat weights as log scale, Default True</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.mgm.MultiGaussModel.get_gauss_stack">
+<span class="sig-name descname"><span class="pre">get_gauss_stack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_arr</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.MultiGaussModel.get_gauss_stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to calculate render model using the ‘Gauss’ method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x0</strong> (<em>float</em>) – x position of center</p></li>
+<li><p><strong>y0</strong> (<em>float</em>) – y position of center</p></li>
+<li><p><strong>q_arr</strong> (<em>Array</em>) – Array of axis ratios</p></li>
+<li><p><strong>a_arr</strong> – Array of Gaussian Weights</p></li>
+<li><p><strong>var_arr</strong> – Array of Gassian widths, note this the variance so sig^2</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Gauss_model</strong> – Array representing the model image, same shape as ‘shape’</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.mgm.MultiGaussModel.get_erf_stack">
+<span class="sig-name descname"><span class="pre">get_erf_stack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_var</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.MultiGaussModel.get_erf_stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to calculate render model using the ‘erf’ method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x0</strong> (<em>float</em>) – x position of center</p></li>
+<li><p><strong>y0</strong> (<em>float</em>) – y position of the center</p></li>
+<li><p><strong>final_q</strong> (<em>Array</em>) – Array of axis ratios</p></li>
+<li><p><strong>final_a</strong> (<em>Array</em>) – Array of Gaussian Weights</p></li>
+<li><p><strong>final_var</strong> (<em>Array</em>) – Array of Gassian widths, note this the variance so sig^2</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>erf_model</strong> – Array representing each rendered component</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.mgm.MultiGaussModel.get_hybrid_stack">
+<span class="sig-name descname"><span class="pre">get_hybrid_stack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_var</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.MultiGaussModel.get_hybrid_stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to calculate render model using the hybrid method, which uses erf where neccesary to ensure accurate integration and gauss otherwise. Also set everything &gt;5 sigma away to 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x0</strong> (<em>float</em>) – x position of center</p></li>
+<li><p><strong>y0</strong> (<em>float</em>) – y position of the center</p></li>
+<li><p><strong>final_q</strong> (<em>Array</em>) – Array of axis ratios</p></li>
+<li><p><strong>final_a</strong> (<em>Array</em>) – Array of Gaussian Weights</p></li>
+<li><p><strong>final_var</strong> (<em>Array</em>) – Array of Gassian widths, note this the variance so sig^2</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>erf_model</strong> – Array representing each rendered component</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>3D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.mgm.MultiGaussModel.get_sky_model">
+<span class="sig-name descname"><span class="pre">get_sky_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.MultiGaussModel.get_sky_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to calculate tilted-plane sky model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>args</strong> (<em>(</em><em>a</em><em>,</em><em>b</em><em>,</em><em>c</em><em>) </em><em>(</em><em>float</em><em>,</em><em>float</em><em>,</em><em>float</em><em>)</em>) – a - overall normalization
+b - slope in x direction
+c - slope in y direction</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>sky_model</strong> – Model for sky background based on given parameters, same shape as ‘shape’</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>2D Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.mgm.MultiGaussModel.make_model">
+<span class="sig-name descname"><span class="pre">make_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_stack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.MultiGaussModel.make_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate model image based on given paramters array.
+This version assumaes the gaussian weights are given in linear scale</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>param</strong> (<em>array</em>) – 1-D array containing all the Parameters</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>model_image</strong> – Generated model image as the sum of all components plus sky, if included</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>2D Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="imcascade.mgm.rot_im">
+<span class="sig-prename descclassname"><span class="pre">imcascade.mgm.</span></span><span class="sig-name descname"><span class="pre">rot_im</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.rot_im" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to rotate image around a given point</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>img</strong> (<em>2D array</em>) – Image to be rotated</p></li>
+<li><p><strong>phi</strong> (<em>Float</em>) – angle to rotate image</p></li>
+<li><p><strong>x0</strong> (<em>Float</em>) – x coordinate to rotate image around</p></li>
+<li><p><strong>y0</strong> (<em>Float</em>) – y coordinate to rotate image around</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>rotated image</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>2D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="imcascade.mgm.get_ellip_conv_params">
+<span class="sig-prename descclassname"><span class="pre">imcascade.mgm.</span></span><span class="sig-name descname"><span class="pre">get_ellip_conv_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_all</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_var_all</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_phi</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.get_ellip_conv_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to derrive the observed Gaussian Parameters for a non-circular PSF</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var</strong> (<em>array</em>) – Variances of Gaussian components</p></li>
+<li><p><strong>q</strong> (<em>Float</em>) – Axis ratio of Galaxy</p></li>
+<li><p><strong>phi</strong> (<em>Float</em>) – PA of galaxy</p></li>
+<li><p><strong>psf_var_all</strong> (<em>array</em>) – Variances of PSF gaussian decomposition</p></li>
+<li><p><strong>psf_q</strong> (<em>float</em>) – Axis ratio of PSF</p></li>
+<li><p><strong>psf_phi</strong> (<em>PA of PSF</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>obs_var</strong> (<em>array</em>) – Array of variances for the components of the convolved gaussian model</p></li>
+<li><p><strong>obs_phi</strong> (<em>array</em>) – Array of position angles for the components of the convolved gaussian model</p></li>
+<li><p><strong>obs_q</strong> (<em>array</em>) – Array of axis ratios for the components of the convolved gaussian model</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="imcascade.mgm._erf_approx">
+<span class="sig-prename descclassname"><span class="pre">imcascade.mgm.</span></span><span class="sig-name descname"><span class="pre">_erf_approx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm._erf_approx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Approximate erf function for use with numba</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>scalar</em>) – value</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Approximation of erf(x)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="imcascade.mgm._get_hybrid_stack">
+<span class="sig-prename descclassname"><span class="pre">imcascade.mgm.</span></span><span class="sig-name descname"><span class="pre">_get_hybrid_stack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">im_args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm._get_hybrid_stack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper Function used to calculate render model using the hybrid method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x0</strong> (<em>float</em>) – x position of center</p></li>
+<li><p><strong>y0</strong> (<em>float</em>) – y position of the center</p></li>
+<li><p><strong>final_q</strong> (<em>Array</em>) – Array of axis ratios</p></li>
+<li><p><strong>final_a</strong> – Array of Gaussian Weights</p></li>
+<li><p><strong>final_var</strong> – Array of Gassian widths, note this the variance so sig^2</p></li>
+<li><p><strong>return_stack</strong> (<em>Bool</em><em>, </em><em>optional</em>) – If True returns an image for each individual gaussian</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>erf_model</strong> – Array representing the model image, same shape as ‘shape’</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Tim Miller &amp; Pieter van Dokkum.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

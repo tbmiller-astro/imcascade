@@ -1,0 +1,446 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>imcascade.psf_fitter &mdash; imcascade 0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> imcascade
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">In-depth example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../adv_guide.html">Advanced</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">API Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">imcascade</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">imcascade.psf_fitter</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../_sources/autoapi/imcascade/psf_fitter/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="module-imcascade.psf_fitter">
+<span id="imcascade-psf-fitter"></span><h1><a class="reference internal" href="#module-imcascade.psf_fitter" title="imcascade.psf_fitter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">imcascade.psf_fitter</span></code></a><a class="headerlink" href="#module-imcascade.psf_fitter" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#imcascade.psf_fitter.PSFFitter" title="imcascade.psf_fitter.PSFFitter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PSFFitter</span></code></a></p></td>
+<td><p>A Class used to fit Gaussian models to a PSF image</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="imcascade.psf_fitter.PSFFitter">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">imcascade.psf_fitter.</span></span><span class="sig-name descname"><span class="pre">PSFFitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psf_img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oversamp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.psf_fitter.PSFFitter" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Class used to fit Gaussian models to a PSF image</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psf_img</strong> (<em>str</em><em> or </em><em>2D array</em>) – PSF data to be fit. If a string is given will assume it is a fits file
+and load the Data in the first HDU. If it is an array then will use
+as the PSF image. Either way it is assumed the PSF is centered and image
+is square.</p></li>
+<li><p><strong>oversamp</strong> (<em>Float</em><em>, </em><em>optional</em>) – Factor by which the PSF image is oversampled. Default is 1.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="imcascade.psf_fitter.PSFFitter.psf_data">
+<span class="sig-name descname"><span class="pre">psf_data</span></span><a class="headerlink" href="#imcascade.psf_fitter.PSFFitter.psf_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>pixelized PSF data to be fit</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>2D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="imcascade.psf_fitter.PSFFitter.intens">
+<span class="sig-name descname"><span class="pre">intens</span></span><a class="headerlink" href="#imcascade.psf_fitter.PSFFitter.intens" title="Permalink to this definition">¶</a></dt>
+<dd><p>1D sbp of PSF</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>1D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="imcascade.psf_fitter.PSFFitter.radii">
+<span class="sig-name descname"><span class="pre">radii</span></span><a class="headerlink" href="#imcascade.psf_fitter.PSFFitter.radii" title="Permalink to this definition">¶</a></dt>
+<dd><p>Radii corresponding to <code class="docutils literal notranslate"><span class="pre">intens</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>1D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.psf_fitter.PSFFitter.calc_profile">
+<span class="sig-name descname"><span class="pre">calc_profile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.psf_fitter.PSFFitter.calc_profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the 1-D PSF profile in 1 pixel steps assuming it is circular</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>intens</strong> (<em>1D array</em>) – Intensity profile.</p></li>
+<li><p><strong>radius</strong> (<em>1D array</em>) – radii at which the intensity measuremnts are made.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.psf_fitter.PSFFitter.multi_gauss_1d">
+<span class="sig-name descname"><span class="pre">multi_gauss_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.psf_fitter.PSFFitter.multi_gauss_1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to evaluate a 1-D multi Gaussian model with any number
+of components</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>1D array</em>) – List of parameters to define model. The length should be twice the
+number of components in the following pattern:[ a_1, sig_1, a_2,sig_2, ….]
+where a_i is the weight of the i’th  component and sig_i is the width of the i’th component.</p></li>
+<li><p><strong>r</strong> (<em>float</em><em>, </em><em>array</em>) – Radii at which the profile is to  be evaluated</p></li>
+<li><p><strong>mu</strong> (<em>float</em><em>, </em><em>optional</em>) – The centre of the gaussian distribution, default is 0</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The multi-gaussian profile evaluated at ‘r’</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.psf_fitter.PSFFitter.multi_gauss_1d_ls">
+<span class="sig-name descname"><span class="pre">multi_gauss_1d_ls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">np.zeros(10)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">np.zeros(10)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.psf_fitter.PSFFitter.multi_gauss_1d_ls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for multi_gauss_1d function, to be used in fitting the profile</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>1D Array</em>) – List of parameters to define model. The length should be twice
+the number of components in the following pattern:
+[ a_1, sig_1, a_2,sig_2, ….]. Here a_i is the weight of the i’th
+component and sig_i is the width of the i’th component.</p></li>
+<li><p><strong>x_data</strong> (<em>1-D array</em>) – x_data to be fit, generally self.radius.</p></li>
+<li><p><strong>y_data</strong> (<em>1-D array</em>) – y_data to be fit, genrally self.intens</p></li>
+<li><p><strong>mu</strong> (<em>float</em><em>, </em><em>optional</em>) – The centre of the gaussian distribution, default is 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>resid</strong> – log scale residuals between the models specified by ‘params’ and
+the given y_data</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.psf_fitter.PSFFitter.fit_N">
+<span class="sig-name descname"><span class="pre">fit_N</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frac_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.psf_fitter.PSFFitter.fit_N" title="Permalink to this definition">¶</a></dt>
+<dd><p>‘Fully’ Fit a Multi Gaussian Model with a given number of gaussians
+to the psf profile. Start with 1D to find the best fit widths and then
+us evaluate chi2 in 2D</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> (<em>Int</em>) – Number of gaussian to us in fit</p></li>
+<li><p><strong>frac_cutoff</strong> (<em>float</em><em>, </em><em>optional</em>) – Fraction of max, below which to not fit. This is done to focus
+on the center of the PSF and not the edges. Important because
+we using the log-residuals</p></li>
+<li><p><strong>plot</strong> (<em>bool</em>) – Whether or not to show summary plot</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>a_fit</strong> (<em>1-D array</em>) – Best fit Weights, corrected for oversamping</p></li>
+<li><p><strong>sig_fit</strong> (<em>1-D array</em>) – Best fit widths, corrected for oversamping</p></li>
+<li><p><strong>Chi2</strong> (<em>Float</em>) – The overall chi squared of the fit, computed using the best fit 2D model</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.psf_fitter.PSFFitter.fit_1D">
+<span class="sig-name descname"><span class="pre">fit_1D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_guess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frac_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.psf_fitter.PSFFitter.fit_1D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit a 1-D Multi Gaussian Model to the psf profile</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> (<em>Int</em>) – Number of gaussian to us in fit</p></li>
+<li><p><strong>guess</strong> (<em>Init</em>) – Initial guess at parameters, if None will set Default based on N</p></li>
+<li><p><strong>frac_cutoff</strong> (<em>float</em>) – Fraction of max, below which to not fit. This is done to focus
+on the center of the PSF and not the edges. Important because
+we using the log-residuals</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>a_fit</strong> (<em>1-D array</em>) – Best fit Weights, Not corrected for oversampling</p></li>
+<li><p><strong>sig_fit</strong> (<em>1-D array</em>) – Best fit widths, Not corrected for oversampling</p></li>
+<li><p><strong>Chi2</strong> (<em>Float</em>) – The overall chi squared of the fit</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.psf_fitter.PSFFitter.auto_fit">
+<span class="sig-name descname"><span class="pre">auto_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frac_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_a</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.psf_fitter.PSFFitter.auto_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used for automatic fitting of PSF. First using a 1-D fit to find
+the smallest acceptable number of Gaussians and the corresponding widths,
+then using these widths to fit in 2D and find the weights.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> (<em>Int</em>) – Number of gaussian to us in fit</p></li>
+<li><p><strong>frac_cutoff</strong> (<em>float</em>) – Fraction of max, below which to not fit. This is done to focus
+on the center of the PSF and not the edges. Important because
+we using the log-residuals</p></li>
+<li><p><strong>norm_a</strong> (<em>Bool</em>) – Wheter or not to normize the resulting weight so that the sum is unity</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>a_fit</strong> (<em>1-D array</em>) – Best fit Weights</p></li>
+<li><p><strong>sig_fit</strong> (<em>1-D array</em>) – Best fit widths</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Tim Miller &amp; Pieter van Dokkum.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

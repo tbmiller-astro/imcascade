@@ -53,6 +53,7 @@ master_doc = 'index'
 
 autoapi_dirs = ['../../imcascade']
 autoapi_ignore = ["*checkpoint*"]
+#autoapi_options = ['members','private-members','show-inheritance','show-module-summary','special-members','imported-members', ]
 html_theme = 'sphinx_rtd_theme'
 
 # Add any paths that contain custom static files (such as style sheets) here,

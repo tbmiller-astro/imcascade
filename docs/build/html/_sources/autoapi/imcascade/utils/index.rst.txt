@@ -1,0 +1,88 @@
+:mod:`imcascade.utils`
+======================
+
+.. py:module:: imcascade.utils
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   imcascade.utils.guess_weights
+   imcascade.utils.expand_mask
+   imcascade.utils.asinh_scale
+   imcascade.utils.log_scale
+   imcascade.utils.dict_add
+   imcascade.utils.get_med_errors
+   imcascade.utils.b
+   imcascade.utils.sersic
+   imcascade.utils.min_diff_array
+
+
+
+.. function:: guess_weights(sig, re, flux)
+
+   Method to guess the weights of gaussian componenets given an re and flux.
+   Based on a polynomial fit to the exp fits of Hogg & Lang 2013
+
+
+.. function:: expand_mask(mask, radius=5, threshold=0.001)
+
+
+.. function:: asinh_scale(start, end, num)
+
+
+.. function:: log_scale(start, end, num)
+
+
+.. function:: dict_add(dict_use, key, obj)
+
+
+.. function:: get_med_errors(arr, lo=16, hi=84)
+
+
+.. function:: b(n)
+
+   Simple function to approximate b(n) when evaluating a Sersic profile
+   following Capaccioli (1989). Valid for 0.5 < n < 10
+
+   :param n: Sersic index
+   :type n: float or array
+
+   :returns: **b(n)** -- Approximation to Gamma(2n) = 2 gamma(2n,b(n))
+   :rtype: float or array
+
+
+.. function:: sersic(r, n, re, Ltot)
+
+   Calculates the surface brightness profile for a Sersic profile
+
+   :param r: Radii at which to evaluate surface brightness profile
+   :type r: array
+   :param n: Sersic index of profile
+   :type n: float
+   :param re: Half-light radius of profile
+   :type re: float
+   :param Ltot: Total flux of Sersic profile
+   :type Ltot: float
+
+   :returns: Surface brightness profile evaluate along the semi-major axis at 'r'
+   :rtype: float or array
+
+
+.. function:: min_diff_array(arr)
+
+   Function used to calculate the minimum difference between any  two elements
+   in a given array_like
+   :param arr: Array to be searched
+   :type arr: 1-D array
+
+   :returns: **min_diff** -- The minimum difference between any two elements of the given array
+   :rtype: Float
+
+

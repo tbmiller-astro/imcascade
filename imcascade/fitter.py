@@ -6,13 +6,33 @@ from scipy.stats import norm, truncnorm
 
 from imcascade.mgm import MultiGaussModel
 from imcascade.results import ImcascadeResults,vars_to_use
-from imcascade.utils import dict_add, guess_weights
+from imcascade.utils import dict_add, guess_weights,log_scale,expand_mask
 import dynesty
 from dynesty import utils as dyfunc
 import emcee
 
 log2pi = np.log(2.*np.pi)
-def FitterFromASDF(file_name, init_dict= {}, bounds_dict = {}):
+
+def fitter_from_ASDF(file_name, init_dict= {}, bounds_dict = {}):
+    """ Function used to initalize a fitter from a saved asdf file
+
+    This can be useful for re-running or for initializing a series
+    of galaxies beforehand and then transferring to somewhere else or running in
+    parallel
+
+    Parameters
+    ----------
+    file_name: str
+        location of asdf file containing saved data. Often this is a file created
+        by Fitter.save_results
+    init_dict: dict (optional)
+        Dictionary specifying initial guesses for least_squares fitting to be passed
+        to Fitter instance.
+    bounds_dict: dict (optional)
+        Dictionary specifying bounds for least_squares fitting to be passed
+        to Fitter instance.
+
+"""
     af = asdf.open(file_name,copy_arrays=True)
     dict = af.tree.copy()
 
@@ -98,16 +118,6 @@ class Fitter(MultiGaussModel):
             handlers = [handler,])
         self.logger = logging.getLogger()
 
-        if weight is None:
-            self.weight = np.ones(img.shape)
-            self.mean_weight = 1.
-            self.sum_weight = 1.
-            self.avg_noise = 1.
-        else:
-            self.weight = weight
-            self.mean_weight = np.mean(self.weight[self.weight>0])
-            self.sum_weight = np.sum(self.weight[self.weight>0])
-            self.avg_noise = np.mean(1./np.sqrt(self.weight[self.weight>0]))
 
         if not render_mode in ['gauss', 'erf','hybrid']:
             if verbose: self.logger.info("Incompatible render mode, must choose 'gauss','erf' or 'hybrid'! Setting to 'hybrid'")
@@ -116,21 +126,32 @@ class Fitter(MultiGaussModel):
         if psf_sig is None or psf_a is None:
             if verbose: self.logger.info('No PSF input, running in non-psf mode')
 
-        if self.weight.shape != self.img.shape:
-            raise ValueError("'weight' array must have same shape as 'img'")
+        if weight is None:
+            self.weight = np.ones(img.shape)
+        else:
+            if weight.shape != self.img.shape:
+                raise ValueError("'weight' array must have same shape as 'img'")
+            self.weight = weight
+
 
         if mask is not None:
             if self.weight.shape != self.img.shape:
                 raise ValueError("'mask' array must have same shape as 'img' ")
             self.weight[np.where(mask == 1)] = 0
             self.mask = mask
-
-            self.log_weight = np.zeros(self.weight.shape)
-            self.log_weight[self.weight > 0 ] = np.log(self.weight[self.weight > 0])
         else:
             self.mask = np.zeros(self.img.shape)
-            self.log_weight = np.log(self.weight)
 
+        if np.sum(np.isnan(self.img) + np.sum(np.isnan(self.weight))) > 0:
+            where_inf = np.where(np.isnan(self.img) + np.isnan(self.weight))
+            self.logger.info("Masking nan values at locations:")
+            self.logger.info(where_inf)
+            self.img[where_inf] = 0
+            self.weight[where_inf] = 0
+            self.mask[where_inf] = 1
+
+        self.log_weight = np.zeros(self.weight.shape)
+        self.log_weight[self.weight > 0 ] = np.log(self.weight[self.weight > 0])
         self.loglike_const = 0.5*(np.sum(self.log_weight) - log2pi*(np.sum(self.mask == 0)) )
 
 
@@ -154,24 +175,24 @@ class Fitter(MultiGaussModel):
             #Try to make educated guesses about sky model
 
             #estimate background using median
-            sky0_guess = np.nanmedian(self.img[np.where(self.mask == 0)])
-            if np.isnan(sky0_guess):
-                sky0_guess = 0
+            sky0_guess = np.nanmean(self.img[np.where(self.mask == 0)])
+            if np.abs(sky0_guess) < 1e-6:
+                sky0_guess = 1e-4*np.sign(sky0_guess)
             init_dict = dict_add(init_dict, 'sky0', sky0_guess)
             bounds_dict = dict_add(bounds_dict, 'sky0', [-np.abs(sky0_guess)*10, np.abs(sky0_guess)*10])
 
             #estimate X and Y slopes using edges
             use_x_edge = np.where(self.mask[:,-1]*self.mask[:,0] == 0)
-            sky1_guess = np.nanmedian(self.img[:,1][use_x_edge] - img[:,0][use_x_edge])/img.shape[0]
-            if np.isnan(sky1_guess):
-                sky1_guess = 0
+            sky1_guess = np.nanmean(self.img[:,1][use_x_edge] - img[:,0][use_x_edge])/img.shape[0]
+            if np.abs(sky1_guess) < 1e-8:
+                sky1_guess = 1e-6*np.sign(sky1_guess)
             init_dict = dict_add(init_dict, 'sky1', sky1_guess)
             bounds_dict = dict_add(bounds_dict, 'sky1', [-np.abs(sky1_guess)*10, np.abs(sky1_guess)*10])
 
             use_y_edge = np.where(self.mask[-1,:]*self.mask[0,:] == 0)
-            sky2_guess = np.nanmedian(self.img[-1,:][use_y_edge] - img[0,:][use_y_edge])/img.shape[1]
-            if np.isnan(sky2_guess):
-                sky2_guess = 0
+            sky2_guess = np.nanmean(self.img[-1,:][use_y_edge] - img[0,:][use_y_edge])/img.shape[1]
+            if np.abs(sky2_guess) < 1e-8:
+                sky2_guess = 1e-6*np.sign(sky2_guess)
             init_dict = dict_add(init_dict, 'sky2', sky2_guess)
             bounds_dict = dict_add(bounds_dict, 'sky2', [-np.abs(sky2_guess)*10, np.abs(sky2_guess)*10])
 
@@ -550,7 +571,7 @@ class Fitter(MultiGaussModel):
         if method == 'express':
             ndim = self.Ndof_gauss + self.Ndof_sky
             if not hasattr(self, 'express_gauss_arr'):
-                if self.verbose: self.logger.info('Setting up Express params')
+                if self.verbose: self.logger.info('Setting up pre-rendered images')
                 _ = self.set_up_express_run()
             if prior == 'min_results':
                 sampler = dynesty.DynamicNestedSampler( self.log_like_exp, self.ptform_exp_ls, ndim= ndim, **sampler_kwargs)
@@ -678,13 +699,162 @@ class Fitter(MultiGaussModel):
             file.write_to(file_name)
 
             return dict_to_save
-#To be expanded upon
-def cli():
-    import argparse
-    import yaml
 
-    parser = argparse.ArgumentParser(description='Run imcascade from the terminal')
-    parser.add_argument('-config', type=str,help="string containing the location of the config file")
+def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re = None, flux = None,
+  psf_oversamp = 1, sky_model = True, log_file = None, readnoise = None, gain = None, exp_time = None):
+    """Function used to help Initialize Fitter instance from simple inputs
 
-    args = parser.parse_args()
-    print (args.config)
+    Parameters
+    ----------
+    im: str or 2D Array
+        The image or cutout to be fit with imcascade. If a string is given, it is
+        interpretted as the location of a fits file with the cutout in it's first HDU.
+        Otherwise is a 2D numpy array of the data to be fit
+    psf: str, 2D Array or None
+        Similar to above but for the PSF. If not using a PSF, the use None
+    mask: 2D array (optional)
+        Sources to be masked when fitting, if none is given then one will be derrived
+    err: 2D array (optional)
+        Pixel errors used to calculate the weights when fitting. If none is given will
+        use readnoise, gain and exp_time if given, or default to sep derrived rms
+    x0: float (optional)
+        Inital guess at x position of center, if not will assume the center of the image
+    y0: float (optional)
+        Inital guess at y position of center, if not will assume the center of the image
+    re: float (optional)
+        Inital guess at the effective radius of the galaxy, if not given will estimate
+        using sep kron radius
+    flux: float (optional)
+        Inital guess at the flux of the galaxy, if not given will estimate
+        using sep flux
+    psf_oversamp: float (optional)
+        Oversampling of PSF given, default is 1
+    sky_model: boolean (optional)
+        Whether or not to model sky as tilted-plane, default is True
+    log_file: str (optional)
+        Location of log file
+    readnoise,gain,exp_time: float,float,float (all optional)
+        The read noise (in electrons), gain and exposure time of image that is
+        used to calculate the errors and therefore pixel weights. Only used if
+        ``err = None``. If these parameters are also None, then will estimate
+        pixel errors using sep rms map.
+
+    Returns
+    -------
+    Fitter: imcascade.fitter.Fitter
+        Returns intialized instance of imcascade.fitter.Fitter which can then
+        be used to fit galaxy and analyze results.
+
+"""
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    if log_file is None:
+        handler = logging.StreamHandler()
+    else:
+        handler = logging.FileHandler(log_file)
+
+    logging.basicConfig(format = "%(asctime)s - %(message)s", level = logging.INFO,
+        handlers = [handler,])
+    logger = logging.getLogger()
+
+    if x0 is None:
+        x0 = im.shape[0]/2.
+    if y0 is None:
+        y0 = im.shape[0]/2.
+
+    #Fit PSF
+    if type(psf) == str:
+        psf_data = fits.open(psf)
+        from imcascade.psf_fitter import PSFFitter
+        pfitter = PSFFitter(psf_data[0].data, oversamp = psf_oversamp)
+    elif type(psf) == np.ndarray:
+        from imcascade.psf_fitter import PSFFitter
+        pfitter = PSFFitter(psf, oversamp = psf_oversamp)
+    elif psf is None:
+        logger.info("No PSF given")
+        psf_sig = None
+        psf_a = None
+
+    if psf is not None:
+        #Find best fit gaussian decomposition of PSF
+        psf_sig,psf_a = pfitter.auto_fit()
+        logger.info("Fit PSF with %i components"%len(psf_sig))
+        logger.info("Widths: "+ ','.join(map(str,np.round(psf_sig,2))) )
+        logger.info("Fluxes: "+ ','.join(map(str,np.round(psf_a,2))))
+
+        #Calculate hwhm
+        psf_mp = np.ones(4+len(psf_sig))
+        psf_mp[4:] = psf_a
+        rdict = {'sig':psf_sig, 'Ndof':4+len(psf_sig), 'Ndof_gauss':len(psf_sig), 'Ndof_sky':0, 'log_weight_scale':False,'min_param':psf_mp, 'sky_model':False}
+        psf_res = ImcascadeResults(rdict)
+        psf_hwhm = psf_res.calc_iso_r(psf_res.calc_sbp(np.array([0,]))/2)
+
+        if psf_hwhm > 1:
+            sig_min = psf_hwhm*0.5
+        else:
+            sig_min = 0.5
+    else:
+        sig_min = 0.75
+
+    #Load image data
+    if type(im) == str:
+        im_fits = fits.open(im)
+        im_data = im_fits[0].data
+    elif type(im) == np.ndarray:
+        im_data = im.copy()
+
+    if im_data.dtype.byteorder == '>':
+        im_data = im_data.byteswap().newbyteorder()
+
+    #Use sep to estimate object properties and rms depending
+    import sep
+    bkg = sep.Background(im_data, bw = 16,bh = 16)
+    obj,seg = sep.extract(im, 2., err = bkg.globalrms, segmentation_map = True, deblend_cont=1e-4)
+    seg_obj = seg[int(x0), int(y0)]
+
+    if re is None:
+        a_guess = obj['a'][seg_obj-1]
+    else:
+        a_guess = re
+
+    if flux is None:
+        fl_guess = obj['flux'][seg_obj-1]
+    else:
+        fl_guess = None
+    sig_max = a_guess*9
+
+    init_dict = {'re':a_guess, 'flux':fl_guess, 'sky0':bkg.globalback, 'x0':x0, 'y0':y0}
+
+    #Calculate widths of components
+    if im_data.shape[0] > 100:
+        num_sig = 9
+    else:
+        num_sig = 7
+    sig_use = log_scale(sig_min,sig_max, num_sig)
+    logger.info("Using %i components with logarithmically spaced widths to fit galaxy"%num_sig)
+    logger.info(", ".join(map(str,np.round(sig_use,2))))
+
+    #Use sep results to estimate mask
+    if mask is None:
+        logger.info("No mask was given, derriving one using sep")
+        mask = np.copy(seg)
+        mask[np.where(seg == seg_obj)] = 0
+        mask[mask>=1] = 1
+        mask = expand_mask(mask, threshold = 0.01, radius = 2.5)
+
+    if err is not None:
+        #Calculate weights based on error image given
+        pix_weights = 1./err**2
+        logger.info("Using given errors to calculate pixel weights")
+    elif (gain is not None and readnoise is not None and exp_time is not None):
+        #Calculate based on exp time, gain and readnoise
+        var_calc = im_data/ (gain*exp_time) + readnoise**2/(exp_time**2)  #Maybe gain too?
+        pix_weights = 1/var_calc
+        logger.info("Using gain, exp_time and readnoise to calculate pixel weights")
+    else:
+        #If no info is given then default to sep results which do pretty well
+        logger.info("Using sep rms map to calculate pixel weights")
+        pix_weights = 1./bkg.rms()**2
+
+    #Initalize Fitter
+    return Fitter(im_data,sig_use, psf_sig,psf_a, weight = pix_weights, mask = mask, sky_model = sky_model, log_file = log_file)
