@@ -1,3 +1,0 @@
-[console_scripts]
-run_imcascade = imcascade.fitter:cli
-

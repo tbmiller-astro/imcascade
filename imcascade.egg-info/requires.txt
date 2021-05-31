@@ -1,7 +1,0 @@
-numpy
-scipy
-asdf
-dynesty
-numba
-astropy
-sep
