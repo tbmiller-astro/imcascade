@@ -1,3 +1,4 @@
+ipython
 nbsphinx
 sphinx-rtd-theme
 sphinx-autoapi

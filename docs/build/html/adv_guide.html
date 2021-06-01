@@ -198,7 +198,8 @@
 </style>
 <div class="section" id="advanced">
 <h1>Advanced<a class="headerlink" href="#advanced" title="Permalink to this headline">¶</a></h1>
-<p>A guide of more advancded and in-depth features and possibilities when runnning <code class="docutils literal notranslate"><span class="pre">imcascade</span></code>. Currently in progress of being written</p>
+<p>A guide of more advanceded and in-depth features and possibilities when runnning <code class="docutils literal notranslate"><span class="pre">imcascade</span></code>. Currently in progress of being written</p>
+<p>If you have additional questions please feel free to reach out to me or raise an issue on github!</p>
 <div class="section" id="adjusting-inital-values-and-bounds">
 <h2>Adjusting inital values and bounds<a class="headerlink" href="#adjusting-inital-values-and-bounds" title="Permalink to this headline">¶</a></h2>
 <p>By default <cite>imcascade</cite> attempts to make  ‘’ smart ‘’ guesses for the initial
@@ -233,7 +234,7 @@ be specified in logarithmic scale if exploring the fluxes in log scale. These wi
 <div class="section" id="fitting-options">
 <h2>Fitting options<a class="headerlink" href="#fitting-options" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">imcascade</span></code> utilized previously written routines for the optimization procedures. For the least squares
-minimization we use the ` <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html">scipy.optimize.least_squares</a>
+minimization we use the <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html">scipy.optimize.least_squares</a>
 routine. when using <code class="docutils literal notranslate"><span class="pre">run_ls_min()</span></code> the <code class="docutils literal notranslate"><span class="pre">ls_kwargs</span></code> input can be used to specify keywords to be passed to the <code class="docutils literal notranslate"><span class="pre">least_squares</span></code> function.</p>
 <p>Similarly we implemented <a class="reference external" href="https://dynesty.readthedocs.io/en/latest/">dynesty</a> for Bayesian inference. You can pass arguments through <code class="docutils literal notranslate"><span class="pre">run_dynesty()</span></code>
 for when defining the sampler  using <code class="docutils literal notranslate"><span class="pre">sampler_kwargs</span></code> or running the nested sampling using <code class="docutils literal notranslate"><span class="pre">run_nested_kwargs()</span></code>. Both of these should be dictionaries.</p>

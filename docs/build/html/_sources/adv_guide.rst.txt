@@ -1,7 +1,9 @@
 Advanced
 =========
 
-A guide of more advancded and in-depth features and possibilities when runnning ``imcascade``. Currently in progress of being written
+A guide of more advanceded and in-depth features and possibilities when runnning ``imcascade``. Currently in progress of being written
+
+If you have additional questions please feel free to reach out to me or raise an issue on github!
 
 Adjusting inital values and bounds
 ----------------------------------
@@ -45,7 +47,7 @@ Fitting options
 ---------------
 
 ``imcascade`` utilized previously written routines for the optimization procedures. For the least squares
-minimization we use the ` `scipy.optimize.least_squares <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html>`_
+minimization we use the `scipy.optimize.least_squares <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html>`_
 routine. when using ``run_ls_min()`` the ``ls_kwargs`` input can be used to specify keywords to be passed to the ``least_squares`` function.
 
 Similarly we implemented `dynesty <https://dynesty.readthedocs.io/en/latest/>`_ for Bayesian inference. You can pass arguments through ``run_dynesty()``
