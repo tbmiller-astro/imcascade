@@ -100,7 +100,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#fitting-options">Fitting options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#model-averaging">Model averaging</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#non-circular-psf">Non-circular PSF</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#changing-the-liklihood-function">Changing the liklihood function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#changing-the-likelihood-function">Changing the Likelihood function</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#changing-the-priors">Changing the Priors</a></li>
 </ul>
 </li>
@@ -208,7 +208,7 @@ using the <code class="docutils literal notranslate"><span class="pre">init_dict
 These are both dictionaries, with matching keys, that will be discussed below, where each key should match to a
 float for <code class="docutils literal notranslate"><span class="pre">init_dict</span></code> and 2 length tuple or list for <code class="docutils literal notranslate"><span class="pre">bounds_dict</span></code>.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">x_0</span></code> and <code class="docutils literal notranslate"><span class="pre">y_0</span></code> - The central location of the object. By default this intial value is the center of the image and the bounds are +/- 10 pixels</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">x0</span></code> and <code class="docutils literal notranslate"><span class="pre">y0</span></code> - The central location of the object. By default this intial value is the center of the image and the bounds are +/- 10 pixels</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">phi</span></code> - The position angle in radians, default is <span class="math notranslate nohighlight">\(\pi/2\)</span> with bounds 0 to <span class="math notranslate nohighlight">\(\pi\)</span></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">q</span></code> - The axis ratio initial value is 0.5 and bounds are 0 to 1</p></li>
 </ul>
@@ -258,8 +258,33 @@ and <code class="docutils literal notranslate"><span class="pre">phi</span></cod
 <p>This increases the time to render a model as no each individual component in the observed profile must be rotated individually
 as they will have different position angles. <strong>It has also not been thoroughly tested so use with caution!</strong></p>
 </div>
-<div class="section" id="changing-the-liklihood-function">
-<h2>Changing the liklihood function<a class="headerlink" href="#changing-the-liklihood-function" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="changing-the-likelihood-function">
+<h2>Changing the Likelihood function<a class="headerlink" href="#changing-the-likelihood-function" title="Permalink to this headline">¶</a></h2>
+<p>In our implementation of <code class="docutils literal notranslate"><span class="pre">imcascade</span></code> we have assumed Gaussian statistics and errors when using the usual <span class="math notranslate nohighlight">\(\chi^2\)</span> method. However,
+In some use cases (or just in general, see <a class="reference external" href="https://arxiv.org/abs/1408.1097">Erwin (2015)</a> ) it is preferable to assume Poisson statistics and
+use the Cash statistic as the likelihood (<a class="reference external" href="https://ui.adsabs.harvard.edu/abs/1979ApJ...228..939C/abstract">Cash (1979)</a>). For the “express” method
+the function that gets called to calculate the likelihood is <code class="docutils literal notranslate"><span class="pre">log_like_express</span></code>, we can simply re-assign the to a function of our choosing, using the
+<code class="docutils literal notranslate"><span class="pre">setattr</span></code> method built in to python. First we have initialized a <code class="docutils literal notranslate"><span class="pre">Fitter</span></code> instance under the name <code class="docutils literal notranslate"><span class="pre">fitter_cash</span></code> as usual (but with the pixel weights equal to one)
+and then we run the following code block</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fitter_cash</span> <span class="o">=</span> <span class="n">initialize_fitter</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">psf</span><span class="p">,</span> <span class="n">sky_model</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">log_like_cash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exp_params</span><span class="p">):</span>
+    <span class="s2">&quot;log likelihood using the Cash statistic&quot;</span>
+
+    <span class="c1">#Use this function to generate model</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_express_model</span><span class="p">(</span><span class="n">exp_params</span><span class="p">)</span>
+
+    <span class="c1">#Employing the Cash statistic</span>
+    <span class="k">return</span> <span class="o">-</span><span class="mf">1.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">*</span><span class="p">(</span><span class="n">model</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">img</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">model</span><span class="p">))</span> <span class="p">)</span>
+
+<span class="nb">setattr</span><span class="p">(</span><span class="n">fitter_cash</span><span class="p">,</span> <span class="s1">&#39;log_like_express&#39;</span><span class="p">,</span> <span class="n">log_like_cash</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this example we have written our on function to replace the original function. Now when we use <code class="docutils literal notranslate"><span class="pre">run_dynesty</span></code> it will call
+our new function instead. The function <code class="docutils literal notranslate"><span class="pre">self.make_express_model</span></code> generates the model image and the self weight variable contains the
+pixel weights (which we have set to 1.) and any mask we have supplied. <code class="docutils literal notranslate"><span class="pre">self.img</span></code> contains the input science cutout.</p>
+<p>Using this example as a blueprint, it is possible to change the likelihood function to anything your heart desires! It is important
+to test whatever function you have used to make sure the answer is what you expect.</p>
 </div>
 <div class="section" id="changing-the-priors">
 <h2>Changing the Priors<a class="headerlink" href="#changing-the-priors" title="Permalink to this headline">¶</a></h2>

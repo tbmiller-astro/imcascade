@@ -13,6 +13,166 @@ import emcee
 
 log2pi = np.log(2.*np.pi)
 
+def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re = None, flux = None,
+ psf_oversamp = 1, sky_model = True, log_file = None, readnoise = None, gain = None, exp_time = None):
+    """Function used to help Initialize Fitter instance from simple inputs
+
+    Parameters
+    ----------
+    im: str or 2D Array
+        The image or cutout to be fit with imcascade. If a string is given, it is
+        interpretted as the location of a fits file with the cutout in it's first HDU.
+        Otherwise is a 2D numpy array of the data to be fit
+    psf: str, 2D Array or None
+        Similar to above but for the PSF. If not using a PSF, the use None
+    mask: 2D array (optional)
+        Sources to be masked when fitting, if none is given then one will be derrived
+    err: 2D array (optional)
+        Pixel errors used to calculate the weights when fitting. If none is given will
+        use readnoise, gain and exp_time if given, or default to sep derrived rms
+    x0: float (optional)
+        Inital guess at x position of center, if not will assume the center of the image
+    y0: float (optional)
+        Inital guess at y position of center, if not will assume the center of the image
+    re: float (optional)
+        Inital guess at the effective radius of the galaxy, if not given will estimate
+        using sep kron radius
+    flux: float (optional)
+        Inital guess at the flux of the galaxy, if not given will estimate
+        using sep flux
+    psf_oversamp: float (optional)
+        Oversampling of PSF given, default is 1
+    sky_model: boolean (optional)
+        Whether or not to model sky as tilted-plane, default is True
+    log_file: str (optional)
+        Location of log file
+    readnoise,gain,exp_time: float,float,float (all optional)
+        The read noise (in electrons), gain and exposure time of image that is
+        used to calculate the errors and therefore pixel weights. Only used if
+        ``err = None``. If these parameters are also None, then will estimate
+        pixel errors using sep rms map.
+
+    Returns
+    -------
+    Fitter: imcascade.fitter.Fitter
+        Returns intialized instance of imcascade.fitter.Fitter which can then
+        be used to fit galaxy and analyze results.
+
+"""
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    if log_file is None:
+        handler = logging.StreamHandler()
+    else:
+        handler = logging.FileHandler(log_file)
+
+    logging.basicConfig(format = "%(asctime)s - %(message)s", level = logging.INFO,
+        handlers = [handler,])
+    logger = logging.getLogger()
+
+    if x0 is None:
+        x0 = im.shape[0]/2.
+    if y0 is None:
+        y0 = im.shape[0]/2.
+
+    #Fit PSF
+    if type(psf) == str:
+        psf_data = fits.open(psf)
+        from imcascade.psf_fitter import PSFFitter
+        pfitter = PSFFitter(psf_data[0].data, oversamp = psf_oversamp)
+    elif type(psf) == np.ndarray:
+        from imcascade.psf_fitter import PSFFitter
+        pfitter = PSFFitter(psf, oversamp = psf_oversamp)
+    elif psf is None:
+        logger.info("No PSF given")
+        psf_sig = None
+        psf_a = None
+
+    if psf is not None:
+        #Find best fit gaussian decomposition of PSF
+        psf_sig,psf_a = pfitter.auto_fit()
+        logger.info("Fit PSF with %i components"%len(psf_sig))
+        logger.info("Widths: "+ ','.join(map(str,np.round(psf_sig,2))) )
+        logger.info("Fluxes: "+ ','.join(map(str,np.round(psf_a,2))))
+
+        #Calculate hwhm
+        psf_mp = np.ones(4+len(psf_sig))
+        psf_mp[4:] = psf_a
+        rdict = {'sig':psf_sig, 'Ndof':4+len(psf_sig), 'Ndof_gauss':len(psf_sig), 'Ndof_sky':0, 'log_weight_scale':False,'min_param':psf_mp, 'sky_model':False}
+        psf_res = ImcascadeResults(rdict)
+        psf_hwhm = psf_res.calc_iso_r(psf_res.calc_sbp(np.array([0,]))/2)
+
+        if psf_hwhm > 1:
+            sig_min = psf_hwhm*0.5
+        else:
+            sig_min = 0.5
+    else:
+        sig_min = 0.75
+
+    #Load image data
+    if type(im) == str:
+        im_fits = fits.open(im)
+        im_data = im_fits[0].data
+    elif type(im) == np.ndarray:
+        im_data = im.copy()
+
+    if im_data.dtype.byteorder == '>':
+        im_data = im_data.byteswap().newbyteorder()
+
+    #Use sep to estimate object properties and rms depending
+    import sep
+    bkg = sep.Background(im_data, bw = 16,bh = 16)
+    obj,seg = sep.extract(im_data, 2., err = bkg.globalrms, segmentation_map = True, deblend_cont=1e-4)
+    seg_obj = seg[int(x0), int(y0)]
+
+    if re is None:
+        a_guess = obj['a'][seg_obj-1]
+    else:
+        a_guess = re
+
+    if flux is None:
+        fl_guess = obj['flux'][seg_obj-1]
+    else:
+        fl_guess = None
+    sig_max = a_guess*9
+
+    init_dict = {'re':a_guess, 'flux':fl_guess, 'sky0':bkg.globalback, 'x0':x0, 'y0':y0}
+
+    #Calculate widths of components
+    if im_data.shape[0] > 100:
+        num_sig = 9
+    else:
+        num_sig = 7
+    sig_use = log_scale(sig_min,sig_max, num_sig)
+    logger.info("Using %i components with logarithmically spaced widths to fit galaxy"%num_sig)
+    logger.info(", ".join(map(str,np.round(sig_use,2))))
+
+    #Use sep results to estimate mask
+    if mask is None:
+        logger.info("No mask was given, derriving one using sep")
+        mask = np.copy(seg)
+        mask[np.where(seg == seg_obj)] = 0
+        mask[mask>=1] = 1
+        mask = expand_mask(mask, threshold = 0.01, radius = 2.5)
+
+    if err is not None:
+        #Calculate weights based on error image given
+        pix_weights = 1./err**2
+        logger.info("Using given errors to calculate pixel weights")
+    elif (gain is not None and readnoise is not None and exp_time is not None):
+        #Calculate based on exp time, gain and readnoise
+        var_calc = im_data/ (gain*exp_time) + readnoise**2/(exp_time**2)  #Maybe gain too?
+        pix_weights = 1/var_calc
+        logger.info("Using gain, exp_time and readnoise to calculate pixel weights")
+    else:
+        #If no info is given then default to sep results which do pretty well
+        logger.info("Using sep rms map to calculate pixel weights")
+        pix_weights = 1./bkg.rms()**2
+
+    #Initalize Fitter
+    return Fitter(im_data,sig_use, psf_sig,psf_a, weight = pix_weights, mask = mask, init_dict = init_dict, sky_model = sky_model, log_file = log_file)
+
+
 def fitter_from_ASDF(file_name, init_dict= {}, bounds_dict = {}):
     """ Function used to initalize a fitter from a saved asdf file
 
@@ -285,11 +445,9 @@ class Fitter(MultiGaussModel):
 
         Returns
         -------
-        min_res: scipy.optimize.OptimizeResult
-            Returns an Optimize results class containing the optimized parameters
-            along with error and status messages
-            (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html)
-            noteworthy that the best fit parameters are stored in ``min_res.x``
+        min_param: 1D array
+            Returns a 1D array containing the optimized parameters that describe
+            the best fit model.
 """
         if self.verbose: self.logger.info('Running least squares minimization')
         min_res = least_squares(self.resid_1d, self.param_init, bounds = self.bnds, **ls_kwargs)
@@ -297,7 +455,7 @@ class Fitter(MultiGaussModel):
         self.min_param = min_res.x
         if self.verbose: self.logger.info('Finished least squares minimization')
 
-        return min_res
+        return self.min_param
 
     def set_up_express_run(self, set_params = None):
         """ Function to set up 'express' run using pre-rendered images with a
@@ -372,6 +530,35 @@ class Fitter(MultiGaussModel):
             sig[sig>1] = 1.
             self._exp_pri_scales = sig.copy()
         return stack
+
+    def make_express_model(self, exp_params):
+        """Function to generate a model for a given set of paramters,
+        specifically using the pre-renedered model for the 'express' mode
+
+        Parameters
+        ----------
+        exo_params: Array
+            List of parameters to define model. Length is Ndof_gauss + Ndof_sky
+            since the structural parameters (x0,y0,q, PA) are set
+
+        Returns
+        -------
+        model: 2D-array
+            Model image based on input parameters
+"""
+        if self.sky_model:
+            final_a = exp_params[:-self.Ndof_sky]
+        else:
+            final_a = np.copy(exp_params)
+
+        if self.log_weight_scale: final_a = 10**final_a
+
+        model = np.sum(final_a*self.express_gauss_arr, axis = -1)
+
+        if self.sky_model:
+            model += self.get_sky_model(exp_params[-self.Ndof_sky:])
+
+        return model
 
     def chi_sq(self,params):
         """Function to calculate chi_sq for a given set of paramters
@@ -449,19 +636,7 @@ class Fitter(MultiGaussModel):
         log likeliehood: float
             log likeliehood for a given set of paramters, defined as -0.5*chi^2
 """
-
-        if self.sky_model:
-            final_a = exp_params[:-self.Ndof_sky]
-        else:
-            final_a = np.copy(exp_params)
-
-        if self.log_weight_scale: final_a = 10**final_a
-
-        model = np.sum(final_a*self.express_gauss_arr, axis = -1)
-
-        if self.sky_model:
-            model += self.get_sky_model(exp_params[-self.Ndof_sky:])
-
+        model = self.make_express_model(exp_params)
         return -0.5*np.sum( (self.img - model)**2 *self.weight ) + self.loglike_const
 
     def ptform_exp_ls(self, u):
@@ -497,43 +672,6 @@ class Fitter(MultiGaussModel):
         x = np.zeros(len(u))
         x = u*(self.ub[4:] - self.lb[4:]) + self.lb[4:]
         return x
-
-    def log_prior_express(self,params):
-        """Prior function to be used in emcee 'express' mode.
-        By default they are all unifrom priors defined by self.lb and self.ub
-
-        Parameters
-        ----------
-        u: array
-            array of random numbers from 0 to 1
-
-        Returns
-        -------
-        log prior: float
-            Value of prior for given set of params
-"""
-        inside_prior = (params > self.lb[4:])*(params < self.ub[4:])
-        if inside_prior.all():
-            return 0
-        else:
-            return -np.inf
-
-    def log_prob_express(self,params):
-        """Probability function to be used in emcee 'express' mode.
-        By default they are all unifrom priors defined by self.lb and self.ub
-
-        Parameters
-        ----------
-        u: array
-            array of random numbers from 0 to 1
-
-        Returns
-        -------
-        log prob: float
-            Value of log Probability for given set of params
-"""
-        logp = self.log_prior_express(params)
-        return self.log_like_exp(params) + logp
 
 
     def run_dynesty(self,method = 'full', sampler_kwargs = {}, run_nested_kwargs = {}, prior = 'min_results'):
@@ -599,65 +737,6 @@ class Fitter(MultiGaussModel):
         return self.posterier
 
 
-    def run_emcee(self,method = 'express', nwalkers = 32, max_it = int(1e6), check_freq = int(500), print_progress = False):
-        "Not sure if it will stay"
-        if method == 'full':
-            print(" 'full' not yet implemented")
-            return 0
-        elif method == 'express':
-            if not hasattr(self, 'express_gauss_arr') or not hasattr(self, 'min_err') or not hasattr(self, 'min_res'):
-                if self.verbose: print ('Setting up express run')
-                self.set_up_express_run()
-
-            ndim = self.Ndof_gauss + self.Ndof_sky
-            init_arr = self.min_param[4:]
-
-            #pos = init_arr + 0.05 * np.random.randn(nwalkers, ndim)
-            pos = (self.ub[4:] - self.lb[4:])*np.random.uniform(size = (nwalkers,ndim) )  + self.lb[4:]
-
-            #Check to see if initial positions are valid
-            for ex in pos:
-                if np.isinf(self.log_prior_express(ex) ):
-                    w_lo = ex < self.lb[4:]
-                    ex[w_lo] = self.lb[4:][w_lo] + 1e-5
-                    w_hi = ex > self.ub[4:]
-                    ex[w_hi] = self.ub[4:][w_hi] - 1e-5
-            sampler = emcee.EnsembleSampler(nwalkers, ndim, self.log_prob_express)
-        else:
-            print("Must choose either 'full' or 'express' method")
-            return 0
-
-        old_tau = 0
-        for sample in sampler.sample(pos, iterations=max_it):
-            #only check every check_freq number of steps
-            if sampler.iteration % check_freq: continue
-
-            tau = sampler.get_autocorr_time(tol=0)
-            converged = np.all(tau * 50 < sampler.iteration)
-            converged &= np.all(np.abs(old_tau - tau) / tau < 0.05)
-
-
-            if print_progress:
-                print (r"Iter: %.2e - 50xtau: %.2e - d tau: %.3f"%(sampler.iteration, np.max(tau*50), np.max(np.abs(old_tau - tau) / tau) ) )
-
-            if converged:
-                break
-            old_tau = tau
-
-        self.emcee_sampler = sampler
-        self.emcee_tau = tau
-        post_samp = sampler.get_chain(discard=int(3 * np.max(tau)), thin = int(0.3 * np.min(tau)),  flat=True)
-
-        if method == 'express':
-            set_arr = self.exp_set_params[:,np.newaxis] *np.ones((4,post_samp.shape[0] ) )
-            set_arr = np.transpose(set_arr)
-            self.posterier = np.hstack([set_arr, post_samp])
-        else:
-            self.posterier = np.copy(post_samp)
-
-        self.post_method = 'emcee-'+method
-        return sampler
-
     def save_results(self,file_name, run_basic_analysis = True, thin_posterier = 1, zpt = None, cutoff = None, errp_lo = 16, errp_hi =84):
         """Function to save results after run_ls_min, run_dynesty and/or run_emcee is performed. Will be saved as an ASDF file.
 
@@ -699,162 +778,3 @@ class Fitter(MultiGaussModel):
             file.write_to(file_name)
 
             return dict_to_save
-
-def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re = None, flux = None,
-  psf_oversamp = 1, sky_model = True, log_file = None, readnoise = None, gain = None, exp_time = None):
-    """Function used to help Initialize Fitter instance from simple inputs
-
-    Parameters
-    ----------
-    im: str or 2D Array
-        The image or cutout to be fit with imcascade. If a string is given, it is
-        interpretted as the location of a fits file with the cutout in it's first HDU.
-        Otherwise is a 2D numpy array of the data to be fit
-    psf: str, 2D Array or None
-        Similar to above but for the PSF. If not using a PSF, the use None
-    mask: 2D array (optional)
-        Sources to be masked when fitting, if none is given then one will be derrived
-    err: 2D array (optional)
-        Pixel errors used to calculate the weights when fitting. If none is given will
-        use readnoise, gain and exp_time if given, or default to sep derrived rms
-    x0: float (optional)
-        Inital guess at x position of center, if not will assume the center of the image
-    y0: float (optional)
-        Inital guess at y position of center, if not will assume the center of the image
-    re: float (optional)
-        Inital guess at the effective radius of the galaxy, if not given will estimate
-        using sep kron radius
-    flux: float (optional)
-        Inital guess at the flux of the galaxy, if not given will estimate
-        using sep flux
-    psf_oversamp: float (optional)
-        Oversampling of PSF given, default is 1
-    sky_model: boolean (optional)
-        Whether or not to model sky as tilted-plane, default is True
-    log_file: str (optional)
-        Location of log file
-    readnoise,gain,exp_time: float,float,float (all optional)
-        The read noise (in electrons), gain and exposure time of image that is
-        used to calculate the errors and therefore pixel weights. Only used if
-        ``err = None``. If these parameters are also None, then will estimate
-        pixel errors using sep rms map.
-
-    Returns
-    -------
-    Fitter: imcascade.fitter.Fitter
-        Returns intialized instance of imcascade.fitter.Fitter which can then
-        be used to fit galaxy and analyze results.
-
-"""
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-    if log_file is None:
-        handler = logging.StreamHandler()
-    else:
-        handler = logging.FileHandler(log_file)
-
-    logging.basicConfig(format = "%(asctime)s - %(message)s", level = logging.INFO,
-        handlers = [handler,])
-    logger = logging.getLogger()
-
-    if x0 is None:
-        x0 = im.shape[0]/2.
-    if y0 is None:
-        y0 = im.shape[0]/2.
-
-    #Fit PSF
-    if type(psf) == str:
-        psf_data = fits.open(psf)
-        from imcascade.psf_fitter import PSFFitter
-        pfitter = PSFFitter(psf_data[0].data, oversamp = psf_oversamp)
-    elif type(psf) == np.ndarray:
-        from imcascade.psf_fitter import PSFFitter
-        pfitter = PSFFitter(psf, oversamp = psf_oversamp)
-    elif psf is None:
-        logger.info("No PSF given")
-        psf_sig = None
-        psf_a = None
-
-    if psf is not None:
-        #Find best fit gaussian decomposition of PSF
-        psf_sig,psf_a = pfitter.auto_fit()
-        logger.info("Fit PSF with %i components"%len(psf_sig))
-        logger.info("Widths: "+ ','.join(map(str,np.round(psf_sig,2))) )
-        logger.info("Fluxes: "+ ','.join(map(str,np.round(psf_a,2))))
-
-        #Calculate hwhm
-        psf_mp = np.ones(4+len(psf_sig))
-        psf_mp[4:] = psf_a
-        rdict = {'sig':psf_sig, 'Ndof':4+len(psf_sig), 'Ndof_gauss':len(psf_sig), 'Ndof_sky':0, 'log_weight_scale':False,'min_param':psf_mp, 'sky_model':False}
-        psf_res = ImcascadeResults(rdict)
-        psf_hwhm = psf_res.calc_iso_r(psf_res.calc_sbp(np.array([0,]))/2)
-
-        if psf_hwhm > 1:
-            sig_min = psf_hwhm*0.5
-        else:
-            sig_min = 0.5
-    else:
-        sig_min = 0.75
-
-    #Load image data
-    if type(im) == str:
-        im_fits = fits.open(im)
-        im_data = im_fits[0].data
-    elif type(im) == np.ndarray:
-        im_data = im.copy()
-
-    if im_data.dtype.byteorder == '>':
-        im_data = im_data.byteswap().newbyteorder()
-
-    #Use sep to estimate object properties and rms depending
-    import sep
-    bkg = sep.Background(im_data, bw = 16,bh = 16)
-    obj,seg = sep.extract(im, 2., err = bkg.globalrms, segmentation_map = True, deblend_cont=1e-4)
-    seg_obj = seg[int(x0), int(y0)]
-
-    if re is None:
-        a_guess = obj['a'][seg_obj-1]
-    else:
-        a_guess = re
-
-    if flux is None:
-        fl_guess = obj['flux'][seg_obj-1]
-    else:
-        fl_guess = None
-    sig_max = a_guess*9
-
-    init_dict = {'re':a_guess, 'flux':fl_guess, 'sky0':bkg.globalback, 'x0':x0, 'y0':y0}
-
-    #Calculate widths of components
-    if im_data.shape[0] > 100:
-        num_sig = 9
-    else:
-        num_sig = 7
-    sig_use = log_scale(sig_min,sig_max, num_sig)
-    logger.info("Using %i components with logarithmically spaced widths to fit galaxy"%num_sig)
-    logger.info(", ".join(map(str,np.round(sig_use,2))))
-
-    #Use sep results to estimate mask
-    if mask is None:
-        logger.info("No mask was given, derriving one using sep")
-        mask = np.copy(seg)
-        mask[np.where(seg == seg_obj)] = 0
-        mask[mask>=1] = 1
-        mask = expand_mask(mask, threshold = 0.01, radius = 2.5)
-
-    if err is not None:
-        #Calculate weights based on error image given
-        pix_weights = 1./err**2
-        logger.info("Using given errors to calculate pixel weights")
-    elif (gain is not None and readnoise is not None and exp_time is not None):
-        #Calculate based on exp time, gain and readnoise
-        var_calc = im_data/ (gain*exp_time) + readnoise**2/(exp_time**2)  #Maybe gain too?
-        pix_weights = 1/var_calc
-        logger.info("Using gain, exp_time and readnoise to calculate pixel weights")
-    else:
-        #If no info is given then default to sep results which do pretty well
-        logger.info("Using sep rms map to calculate pixel weights")
-        pix_weights = 1./bkg.rms()**2
-
-    #Initalize Fitter
-    return Fitter(im_data,sig_use, psf_sig,psf_a, weight = pix_weights, mask = mask, sky_model = sky_model, log_file = log_file)

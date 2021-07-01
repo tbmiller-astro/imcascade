@@ -13,7 +13,7 @@ using the ``init_dict`` or ``bounds_dict`` arguments when intializing a ``Fitter
 These are both dictionaries, with matching keys, that will be discussed below, where each key should match to a
 float for ``init_dict`` and 2 length tuple or list for ``bounds_dict``.
 
-* ``x_0`` and ``y_0`` - The central location of the object. By default this intial value is the center of the image and the bounds are +/- 10 pixels
+* ``x0`` and ``y0`` - The central location of the object. By default this intial value is the center of the image and the bounds are +/- 10 pixels
 
 * ``phi`` - The position angle in radians, default is :math:`\pi/2` with bounds 0 to :math:`\pi`
 
@@ -78,9 +78,36 @@ This increases the time to render a model as no each individual component in the
 as they will have different position angles. **It has also not been thoroughly tested so use with caution!**
 
 
-Changing the liklihood function
--------------------------------
+Changing the Likelihood function
+--------------------------------
+In our implementation of ``imcascade`` we have assumed Gaussian statistics and errors when using the usual :math:`\chi^2` method. However,
+In some use cases (or just in general, see `Erwin (2015) <https://arxiv.org/abs/1408.1097>`_ ) it is preferable to assume Poisson statistics and
+use the Cash statistic as the likelihood (`Cash (1979) <https://ui.adsabs.harvard.edu/abs/1979ApJ...228..939C/abstract>`_). For the "express" method
+the function that gets called to calculate the likelihood is ``log_like_express``, we can simply re-assign the to a function of our choosing, using the
+``setattr`` method built in to python. First we have initialized a ``Fitter`` instance under the name ``fitter_cash`` as usual (but with the pixel weights equal to one)
+and then we run the following code block
 
+.. code-block:: python
+
+  fitter_cash = initialize_fitter(img, psf, sky_model = False, err = np.ones(img.shape))
+
+  def log_like_cash(self, exp_params):
+      "log likelihood using the Cash statistic"
+
+      #Use this function to generate model
+      model = self.make_express_model(exp_params)
+
+      #Employing the Cash statistic
+      return -1.*np.sum( self.weight *(model - self.img*np.log(model)) )
+
+  setattr(fitter_cash, 'log_like_express', log_like_cash)
+
+In this example we have written our on function to replace the original function. Now when we use ``run_dynesty`` it will call
+our new function instead. The function ``self.make_express_model`` generates the model image and the self weight variable contains the
+pixel weights (which we have set to 1.) and any mask we have supplied. ``self.img`` contains the input science cutout.
+
+Using this example as a blueprint, it is possible to change the likelihood function to anything your heart desires! It is important
+to test whatever function you have used to make sure the answer is what you expect.
 
 Changing the Priors
 --------------------

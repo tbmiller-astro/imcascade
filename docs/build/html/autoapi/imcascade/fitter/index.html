@@ -331,13 +331,11 @@ inital guesses and bounds.</p>
 <dd class="field-odd"><p><strong>ls_kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Optional list of arguments to be passes to least_squares routine</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>min_res</strong> – Returns an Optimize results class containing the optimized parameters
-along with error and status messages
-(<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html">https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html</a>)
-noteworthy that the best fit parameters are stored in <code class="docutils literal notranslate"><span class="pre">min_res.x</span></code></p>
+<dd class="field-even"><p><strong>min_param</strong> – Returns a 1D array containing the optimized parameters that describe
+the best fit model.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>scipy.optimize.OptimizeResult</p>
+<dd class="field-odd"><p>1D array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -358,6 +356,25 @@ call <code class="docutils literal notranslate"><span class="pre">run_ls_min()</
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>array (shape[0],shape[1], Ndof_gauss)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.make_express_model">
+<span class="sig-name descname"><span class="pre">make_express_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp_params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.make_express_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to generate a model for a given set of paramters,
+specifically using the pre-renedered model for the ‘express’ mode</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>exo_params</strong> (<em>Array</em>) – List of parameters to define model. Length is Ndof_gauss + Ndof_sky
+since the structural parameters (x0,y0,q, PA) are set</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>model</strong> – Model image based on input parameters</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>2D-array</p>
 </dd>
 </dl>
 </dd></dl>

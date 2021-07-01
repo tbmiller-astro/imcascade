@@ -125,11 +125,9 @@ Attributes
       :param ls_kwargs: Optional list of arguments to be passes to least_squares routine
       :type ls_kwargs: dict, optional
 
-      :returns: **min_res** -- Returns an Optimize results class containing the optimized parameters
-                along with error and status messages
-                (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html)
-                noteworthy that the best fit parameters are stored in ``min_res.x``
-      :rtype: scipy.optimize.OptimizeResult
+      :returns: **min_param** -- Returns a 1D array containing the optimized parameters that describe
+                the best fit model.
+      :rtype: 1D array
 
 
    .. method:: set_up_express_run(self, set_params=None)
@@ -144,6 +142,19 @@ Attributes
 
       :returns: **express_gauss_arr** -- Returns a 3-D with pre-rendered images based on input parameters
       :rtype: array (shape[0],shape[1], Ndof_gauss)
+
+
+   .. method:: make_express_model(self, exp_params)
+
+      Function to generate a model for a given set of paramters,
+      specifically using the pre-renedered model for the 'express' mode
+
+      :param exo_params: List of parameters to define model. Length is Ndof_gauss + Ndof_sky
+                         since the structural parameters (x0,y0,q, PA) are set
+      :type exo_params: Array
+
+      :returns: **model** -- Model image based on input parameters
+      :rtype: 2D-array
 
 
    .. method:: chi_sq(self, params)
