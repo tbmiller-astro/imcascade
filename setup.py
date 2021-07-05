@@ -4,19 +4,24 @@ with open('requirements.txt') as infd:
     INSTALL_REQUIRES = [x.strip('\n') for x in infd.readlines()]
     print(INSTALL_REQUIRES)
 
+def readme():
+    with open('README.rst') as f:
+        return f.read()
+
 setuptools.setup(
     name="imcascade",
     version="0.1",
     author="Tim Miller",
     author_email="tim.miller@yale.edu",
     description="imcascade: a Non parametric framework for fitting astronomical sources in 2D using a 'cascade' of Gaussians",
-    entry_points = {
-    'console_scripts':['run_imcascade=imcascade.fitter:cli'],
-    },
+    long_description=readme(),
+    long_description_content_type="text/x-rst",
+    url="https://github.com/tbmiller-astro/imcascade",
+    entry_points = {},
     packages=setuptools.find_packages(),
     install_requires=INSTALL_REQUIRES,
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
