@@ -7,6 +7,9 @@ from scipy.stats import norm, truncnorm
 from imcascade.mgm import MultiGaussModel
 from imcascade.results import ImcascadeResults,vars_to_use
 from imcascade.utils import dict_add, guess_weights,log_scale,expand_mask
+from astropy.stats.biweight import biweight_location as bwl
+from astropy.stats.biweight import biweight_scale as bws
+
 import dynesty
 from dynesty import utils as dyfunc
 import emcee
@@ -335,7 +338,7 @@ class Fitter(MultiGaussModel):
             #Try to make educated guesses about sky model
 
             #estimate background using median
-            sky0_guess = np.nanmean(self.img[np.where(self.mask == 0)])
+            sky0_guess = bwl(self.img[np.where(self.mask == 0)], ignore_nan = True)
             if np.abs(sky0_guess) < 1e-6:
                 sky0_guess = 1e-4*np.sign(sky0_guess)
             init_dict = dict_add(init_dict, 'sky0', sky0_guess)
@@ -343,14 +346,14 @@ class Fitter(MultiGaussModel):
 
             #estimate X and Y slopes using edges
             use_x_edge = np.where(self.mask[:,-1]*self.mask[:,0] == 0)
-            sky1_guess = np.nanmean(self.img[:,1][use_x_edge] - img[:,0][use_x_edge])/img.shape[0]
+            sky1_guess = bwl(self.img[:,1][use_x_edge] - img[:,0][use_x_edge], ignore_nan = True)/img.shape[0]
             if np.abs(sky1_guess) < 1e-8:
                 sky1_guess = 1e-6*np.sign(sky1_guess)
             init_dict = dict_add(init_dict, 'sky1', sky1_guess)
             bounds_dict = dict_add(bounds_dict, 'sky1', [-np.abs(sky1_guess)*10, np.abs(sky1_guess)*10])
 
             use_y_edge = np.where(self.mask[-1,:]*self.mask[0,:] == 0)
-            sky2_guess = np.nanmean(self.img[-1,:][use_y_edge] - img[0,:][use_y_edge])/img.shape[1]
+            sky2_guess = bwl(self.img[-1,:][use_y_edge] - img[0,:][use_y_edge], ignore_nan = True)/img.shape[1]
             if np.abs(sky2_guess) < 1e-8:
                 sky2_guess = 1e-6*np.sign(sky2_guess)
             init_dict = dict_add(init_dict, 'sky2', sky2_guess)
