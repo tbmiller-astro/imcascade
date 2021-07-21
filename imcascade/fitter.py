@@ -348,14 +348,14 @@ class Fitter(MultiGaussModel):
             use_x_edge = np.where(self.mask[:,-1]*self.mask[:,0] == 0)
             sky1_guess = bwl(self.img[:,1][use_x_edge] - img[:,0][use_x_edge], ignore_nan = True)/img.shape[0]
             if np.abs(sky1_guess) < 1e-8:
-                sky1_guess = 1e-6*np.sign(sky1_guess)
+                sky1_guess = 1e-6*np.sign(sky1_guess+1e-12)
             init_dict = dict_add(init_dict, 'sky1', sky1_guess)
             bounds_dict = dict_add(bounds_dict, 'sky1', [-np.abs(sky1_guess)*10, np.abs(sky1_guess)*10])
 
             use_y_edge = np.where(self.mask[-1,:]*self.mask[0,:] == 0)
             sky2_guess = bwl(self.img[-1,:][use_y_edge] - img[0,:][use_y_edge], ignore_nan = True)/img.shape[1]
             if np.abs(sky2_guess) < 1e-8:
-                sky2_guess = 1e-6*np.sign(sky2_guess)
+                sky2_guess = 1e-6*np.sign(sky2_guess+1e-12)
             init_dict = dict_add(init_dict, 'sky2', sky2_guess)
             bounds_dict = dict_add(bounds_dict, 'sky2', [-np.abs(sky2_guess)*10, np.abs(sky2_guess)*10])
 
