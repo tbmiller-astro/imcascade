@@ -30,20 +30,89 @@ Functions
    Method to guess the weights of gaussian componenets given an re and flux.
    Based on a polynomial fit to the exp fits of Hogg & Lang 2013
 
+   :param sig: List of gaussian widths for imcascade model
+   :type sig: array
+   :param re: Estimate of effective radius
+   :type re: Float
+   :param flux: Estimate of flux
+
+   :returns: **a_i** -- Inital estimate of weights based on re and flux
+   :rtype: Array
+
 
 .. function:: expand_mask(mask, radius=5, threshold=0.001)
+
+   Expands mask by convolving it with a Gaussians
+
+   :param Mask: inital mask with masked pixels equal to 1
+   :type Mask: 2D array
+   :param radius: width of gaussian used to convolve mask. default 5, set larger for more aggresive masking
+   :type radius: Float
+   :param threshold: threshold to generate new mask from convolved mask. Default is 1e-3, set lower for more aggresive mask
+   :type threshold: Float
+
+   :returns: **new_mask** -- New, expanded mask
+   :rtype: 2D-Array
 
 
 .. function:: asinh_scale(start, end, num)
 
+   Simple wrapper to generate list of numbers equally spaced in asinh space
+
+   :param start: Inital number
+   :type start: floar
+   :param end: Final number
+   :type end: Float
+   :param num: Number of number in the list
+   :type num: Float
+
+   :returns: **list** -- List of number spanning start to end, equally space in asinh space
+   :rtype: 1d array
+
 
 .. function:: log_scale(start, end, num)
+
+   Simple wrapper to generate list of numbers equally spaced in logspace
+
+   :param start: Inital number
+   :type start: floar
+   :param end: Final number
+   :type end: Float
+   :param num: Number of number in the list
+   :type num: Float
+
+   :returns: **list** -- List of number spanning start to end, equally space in log space
+   :rtype: 1d array
 
 
 .. function:: dict_add(dict_use, key, obj)
 
+   Simple wrapper to add obj to dictionary if it doesn't exist. Used in fitter.Fitter when defining defaults
+
+   :param dict_use: dictionary to be, possibly, updated
+   :type dict_use: Dictionary
+   :param key: key to update, only updated if the key doesn't exist in dict_use already
+   :type key: str
+   :param obj: Object to be added to dict_use under key
+   :type obj: Object
+
+   :returns: **dict_add** -- updated dictionary
+   :rtype: Dictionary
+
 
 .. function:: get_med_errors(arr, lo=16, hi=84)
+
+   Simple function to find percentiles from distribution
+
+   :param arr: Array containing in the distribution of intrest
+   :type arr: array
+   :param lo: percentile to define lower error bar, Default 16
+   :type lo: float (optional)
+   :param hi: percentile to define upper error bar, Default 84
+   :type hi: float (optional)
+
+   :returns: **(med,err_lo,err_hi)** -- Array containg the median and errorbars of the distiribution
+   :rtype: array
 
 
 .. function:: b(n)

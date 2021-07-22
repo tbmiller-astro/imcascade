@@ -201,19 +201,19 @@
 <td><p>Method to guess the weights of gaussian componenets given an re and flux.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#imcascade.utils.expand_mask" title="imcascade.utils.expand_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expand_mask</span></code></a>(mask, radius=5, threshold=0.001)</p></td>
-<td><p></p></td>
+<td><p>Expands mask by convolving it with a Gaussians</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#imcascade.utils.asinh_scale" title="imcascade.utils.asinh_scale"><code class="xref py py-obj docutils literal notranslate"><span class="pre">asinh_scale</span></code></a>(start, end, num)</p></td>
-<td><p></p></td>
+<td><p>Simple wrapper to generate list of numbers equally spaced in asinh space</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#imcascade.utils.log_scale" title="imcascade.utils.log_scale"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_scale</span></code></a>(start, end, num)</p></td>
-<td><p></p></td>
+<td><p>Simple wrapper to generate list of numbers equally spaced in logspace</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#imcascade.utils.dict_add" title="imcascade.utils.dict_add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict_add</span></code></a>(dict_use, key, obj)</p></td>
-<td><p></p></td>
+<td><p>Simple wrapper to add obj to dictionary if it doesn’t exist. Used in fitter.Fitter when defining defaults</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#imcascade.utils.get_med_errors" title="imcascade.utils.get_med_errors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_med_errors</span></code></a>(arr, lo=16, hi=84)</p></td>
-<td><p></p></td>
+<td><p>Simple function to find percentiles from distribution</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#imcascade.utils.b" title="imcascade.utils.b"><code class="xref py py-obj docutils literal notranslate"><span class="pre">b</span></code></a>(n)</p></td>
 <td><p>Simple function to approximate b(n) when evaluating a Sersic profile</p></td>
@@ -231,32 +231,127 @@
 <span class="sig-prename descclassname"><span class="pre">imcascade.utils.</span></span><span class="sig-name descname"><span class="pre">guess_weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flux</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.utils.guess_weights" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method to guess the weights of gaussian componenets given an re and flux.
 Based on a polynomial fit to the exp fits of Hogg &amp; Lang 2013</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sig</strong> (<em>array</em>) – List of gaussian widths for imcascade model</p></li>
+<li><p><strong>re</strong> (<em>Float</em>) – Estimate of effective radius</p></li>
+<li><p><strong>flux</strong> – Estimate of flux</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>a_i</strong> – Inital estimate of weights based on re and flux</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="imcascade.utils.expand_mask">
 <span class="sig-prename descclassname"><span class="pre">imcascade.utils.</span></span><span class="sig-name descname"><span class="pre">expand_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.utils.expand_mask" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Expands mask by convolving it with a Gaussians</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Mask</strong> (<em>2D array</em>) – inital mask with masked pixels equal to 1</p></li>
+<li><p><strong>radius</strong> (<em>Float</em>) – width of gaussian used to convolve mask. default 5, set larger for more aggresive masking</p></li>
+<li><p><strong>threshold</strong> (<em>Float</em>) – threshold to generate new mask from convolved mask. Default is 1e-3, set lower for more aggresive mask</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>new_mask</strong> – New, expanded mask</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>2D-Array</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="imcascade.utils.asinh_scale">
 <span class="sig-prename descclassname"><span class="pre">imcascade.utils.</span></span><span class="sig-name descname"><span class="pre">asinh_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.utils.asinh_scale" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Simple wrapper to generate list of numbers equally spaced in asinh space</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start</strong> (<em>floar</em>) – Inital number</p></li>
+<li><p><strong>end</strong> (<em>Float</em>) – Final number</p></li>
+<li><p><strong>num</strong> (<em>Float</em>) – Number of number in the list</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>list</strong> – List of number spanning start to end, equally space in asinh space</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1d array</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="imcascade.utils.log_scale">
 <span class="sig-prename descclassname"><span class="pre">imcascade.utils.</span></span><span class="sig-name descname"><span class="pre">log_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.utils.log_scale" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Simple wrapper to generate list of numbers equally spaced in logspace</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start</strong> (<em>floar</em>) – Inital number</p></li>
+<li><p><strong>end</strong> (<em>Float</em>) – Final number</p></li>
+<li><p><strong>num</strong> (<em>Float</em>) – Number of number in the list</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>list</strong> – List of number spanning start to end, equally space in log space</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1d array</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="imcascade.utils.dict_add">
 <span class="sig-prename descclassname"><span class="pre">imcascade.utils.</span></span><span class="sig-name descname"><span class="pre">dict_add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dict_use</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.utils.dict_add" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Simple wrapper to add obj to dictionary if it doesn’t exist. Used in fitter.Fitter when defining defaults</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dict_use</strong> (<em>Dictionary</em>) – dictionary to be, possibly, updated</p></li>
+<li><p><strong>key</strong> (<em>str</em>) – key to update, only updated if the key doesn’t exist in dict_use already</p></li>
+<li><p><strong>obj</strong> (<em>Object</em>) – Object to be added to dict_use under key</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>dict_add</strong> – updated dictionary</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dictionary</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="imcascade.utils.get_med_errors">
 <span class="sig-prename descclassname"><span class="pre">imcascade.utils.</span></span><span class="sig-name descname"><span class="pre">get_med_errors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">84</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.utils.get_med_errors" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Simple function to find percentiles from distribution</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>array</em>) – Array containing in the distribution of intrest</p></li>
+<li><p><strong>lo</strong> (<em>float</em><em> (</em><em>optional</em><em>)</em>) – percentile to define lower error bar, Default 16</p></li>
+<li><p><strong>hi</strong> (<em>float</em><em> (</em><em>optional</em><em>)</em>) – percentile to define upper error bar, Default 84</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>(med,err_lo,err_hi)</strong> – Array containg the median and errorbars of the distiribution</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="imcascade.utils.b">

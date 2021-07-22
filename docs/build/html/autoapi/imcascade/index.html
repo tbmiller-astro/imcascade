@@ -464,42 +464,6 @@ unifrom priors defined by self.lb and self.ub</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="imcascade.Fitter.log_prior_express">
-<span class="sig-name descname"><span class="pre">log_prior_express</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.Fitter.log_prior_express" title="Permalink to this definition">¶</a></dt>
-<dd><p>Prior function to be used in emcee ‘express’ mode.
-By default they are all unifrom priors defined by self.lb and self.ub</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>u</strong> (<em>array</em>) – array of random numbers from 0 to 1</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>log prior</strong> – Value of prior for given set of params</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="imcascade.Fitter.log_prob_express">
-<span class="sig-name descname"><span class="pre">log_prob_express</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.Fitter.log_prob_express" title="Permalink to this definition">¶</a></dt>
-<dd><p>Probability function to be used in emcee ‘express’ mode.
-By default they are all unifrom priors defined by self.lb and self.ub</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>u</strong> (<em>array</em>) – array of random numbers from 0 to 1</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>log prob</strong> – Value of log Probability for given set of params</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="imcascade.Fitter.run_dynesty">
 <span class="sig-name descname"><span class="pre">run_dynesty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'full'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampler_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_nested_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'min_results'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.Fitter.run_dynesty" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to run dynesty to sample the posterier distribution using either the
@@ -528,12 +492,6 @@ containg x0, y0, PA and q, are all the same and equal to values used to pre-rend
 <dd class="field-odd"><p>Array</p>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="imcascade.Fitter.run_emcee">
-<span class="sig-name descname"><span class="pre">run_emcee</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'express'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nwalkers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_it</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">int(1000000.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">int(500)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.Fitter.run_emcee" title="Permalink to this definition">¶</a></dt>
-<dd><p>Not sure if it will stay</p>
 </dd></dl>
 
 <dl class="py method">

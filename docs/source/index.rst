@@ -18,10 +18,3 @@ If you are planning on using ``imcascade``, it is strongly recommended to read t
    quickstart.ipynb
    example.ipynb
    adv_guide.rst
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
