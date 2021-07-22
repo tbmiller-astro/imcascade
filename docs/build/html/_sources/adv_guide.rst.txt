@@ -110,4 +110,4 @@ Using this example as a blueprint, it is possible to change the likelihood funct
 to test whatever function you have used to make sure the answer is what you expect.
 
 Changing the Priors
---------------------
+-------------------
