@@ -340,7 +340,7 @@ class Fitter(MultiGaussModel):
             #estimate background using median
             sky0_guess = bwl(self.img[np.where(self.mask == 0)], ignore_nan = True)
             if np.abs(sky0_guess) < 1e-6:
-                sky0_guess = 1e-4*np.sign(sky0_guess)
+                sky0_guess = 1e-4*np.sign(sky0_guess+1e-12)
             init_dict = dict_add(init_dict, 'sky0', sky0_guess)
             bounds_dict = dict_add(bounds_dict, 'sky0', [-np.abs(sky0_guess)*10, np.abs(sky0_guess)*10])
 
