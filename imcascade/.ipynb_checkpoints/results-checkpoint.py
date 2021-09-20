@@ -17,7 +17,7 @@ def r_root_func(r,f_L, weights,sig,cutoff):
 
 vars_to_use = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss',
  'has_psf', 'psf_a','psf_sig','psf_shape','log_weight_scale','min_param','sky_model',
- 'posterior', 'post_method','log_file', 'logz','logz_err']
+ 'posterier', 'post_method','log_file', 'logz','logz_err']
 
 class ImcascadeResults():
     """A class used for collating imcascade results and performing analysis
@@ -28,17 +28,17 @@ class ImcascadeResults():
             Object which contains the data to be analyzed. Can be a Fitter object
             once the run_(ls_min,dynesty, emcee) has been ran. If it is a dictionay
             needs to contain, at bare minmum the variables sig, Ndof, Ndof_sky,
-            Ndof_gauss, log_weight_scale and either min_param or posterior.
+            Ndof_gauss, log_weight_scale and either min_param or posterier.
             If a string is passed it will be interreted as a file locations with
             an ASDF file containing the neccesary information.
 
-        thin_posterior: int (optional)
-            Factor by which to thin the posterior distribution by. While one wants
-            to ensure the posterior is large enough, some of this analysis can
+        thin_posterier: int (optional)
+            Factor by which to thin the posterier distribution by. While one wants
+            to ensure the posterier is large enough, some of this analysis can
             take time if you have >10^6 samples so this is one way to speed up
             this task but use with caution.
 """
-    def __init__(self, Obj, thin_posterior = 1):
+    def __init__(self, Obj, thin_posterier = 1):
         """Initialize a Task instance
 """
         if type(Obj) == imcascade.fitter.Fitter:
@@ -59,14 +59,14 @@ class ImcascadeResults():
             if var_name in dict_obj.keys():
                 setattr(self, var_name, dict_obj[var_name] )
 
-        if hasattr(self, 'posterior'):
-            self.x0 = self.posterior[::int(thin_posterior),0]
-            self.y0 = self.posterior[::int(thin_posterior),1]
-            self.q = self.posterior[::int(thin_posterior),2]
-            self.pa = self.posterior[::int(thin_posterior),3]
-            self.weights = self.posterior[::int(thin_posterior),4:4+self.Ndof_gauss]
+        if hasattr(self, 'posterier'):
+            self.x0 = self.posterier[::int(thin_posterier),0]
+            self.y0 = self.posterier[::int(thin_posterier),1]
+            self.q = self.posterier[::int(thin_posterier),2]
+            self.pa = self.posterier[::int(thin_posterier),3]
+            self.weights = self.posterier[::int(thin_posterier),4:4+self.Ndof_gauss]
 
-            if self.sky_model: self.sky_params = self.posterior[::int(thin_posterior),4+self.Ndof_gauss:]
+            if self.sky_model: self.sky_params = self.posterier[::int(thin_posterier),4+self.Ndof_gauss:]
 
         elif hasattr(self, 'min_param'):
             self.x0 = self.min_param[0]
@@ -461,7 +461,7 @@ class ImcascadeResults():
             around the half-width of the image or the largest gaussian width use
         errp_(lo,hi): float (optional)
             percentiles to be used to calculate the lower and upper error bars from
-            the posterior distribution. Default is 16 and 84, corresponding to 1-sigma
+            the posterier distribution. Default is 16 and 84, corresponding to 1-sigma
             for a guassian distribtuion
         save_results: bool (optional)
             If true will save results to file. If input is a file, will add
@@ -520,7 +520,7 @@ class ImcascadeResults():
                 dict_to_save.pop('input')
                 dict_to_save.pop('obj_type')
 
-                if hasattr(self, 'posterior'):
+                if hasattr(self, 'posterier'):
                     for key in ['flux','r20','r50','r80','r90']:
                         dict_to_save[key+'_post'] = dict_to_save.pop(key)
 
@@ -657,10 +657,10 @@ class MultiResults():
     def __init__(self, lofr):
         self.lofr = lofr
         self.num_res = len(lofr)
-        self.len_post = np.array([res.posterior.shape[0] for res in self.lofr])
+        self.len_post = np.array([res.posterier.shape[0] for res in self.lofr])
         self.lnz_list = np.array([res.logz for res in self.lofr])
         self.lnz_err_list = np.array([res.logz_err for res in self.lofr])
-        #Calculate weights accounting for differnce in evidence and difference in length of posterior
+        #Calculate weights accounting for differnce in evidence and difference in length of posterier
         self.rel_weight = np.exp(self.lnz_list - np.max(self.lnz_list) )* ( np.min(self.len_post)/ self.len_post )
 
         self.rng = rng = np.random.default_rng()
