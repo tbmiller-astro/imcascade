@@ -10,10 +10,10 @@ def readme():
 
 setuptools.setup(
     name="imcascade",
-    version="0.1",
+    version="1.0.1",
     author="Tim Miller",
     author_email="tim.miller@yale.edu",
-    description="imcascade: a Non parametric framework for fitting astronomical sources in 2D using a 'cascade' of Gaussians",
+    description="imcascade: Fitting astronomical images using a 'cascade' of Gaussians",
     long_description=readme(),
     long_description_content_type="text/x-rst",
     url="https://github.com/tbmiller-astro/imcascade",
