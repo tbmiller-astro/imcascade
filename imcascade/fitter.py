@@ -12,7 +12,6 @@ from astropy.stats.biweight import biweight_scale as bws
 
 import dynesty
 from dynesty import utils as dyfunc
-import emcee
 
 log2pi = np.log(2.*np.pi)
 
