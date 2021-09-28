@@ -1,4 +1,4 @@
-""" imcascade: A non-parametric framework for fitting astronomical sources in 2D using series of Gaussians """
-__version__ = "0.1"
+""" imcascade: Fitting astronomical images using a 'cascade' of Gaussians """
+__version__ = "1.0"
 from .fitter import Fitter
 from .results import ImcascadeResults
