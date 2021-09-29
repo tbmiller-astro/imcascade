@@ -46,7 +46,7 @@ Attributes
 
    
 
-.. class:: ImcascadeResults(Obj, thin_posterier=1)
+.. class:: ImcascadeResults(Obj, thin_posterior=1)
 
 
    A class used for collating imcascade results and performing analysis
@@ -54,15 +54,15 @@ Attributes
    :param Obj: Object which contains the data to be analyzed. Can be a Fitter object
                once the run_(ls_min,dynesty, emcee) has been ran. If it is a dictionay
                needs to contain, at bare minmum the variables sig, Ndof, Ndof_sky,
-               Ndof_gauss, log_weight_scale and either min_param or posterier.
+               Ndof_gauss, log_weight_scale and either min_param or posterior.
                If a string is passed it will be interreted as a file locations with
                an ASDF file containing the neccesary information.
    :type Obj: imcascade.fitter.Fitter class, dictionary or str
-   :param thin_posterier: Factor by which to thin the posterier distribution by. While one wants
-                          to ensure the posterier is large enough, some of this analysis can
+   :param thin_posterior: Factor by which to thin the posterior distribution by. While one wants
+                          to ensure the posterior is large enough, some of this analysis can
                           take time if you have >10^6 samples so this is one way to speed up
                           this task but use with caution.
-   :type thin_posterier: int (optional)
+   :type thin_posterior: int (optional)
 
    .. method:: calc_flux(self, cutoff=None)
 
@@ -242,7 +242,7 @@ Attributes
                      around the half-width of the image or the largest gaussian width use
       :type cutoff: float (optional)
       :param errp_(lo,hi): percentiles to be used to calculate the lower and upper error bars from
-                           the posterier distribution. Default is 16 and 84, corresponding to 1-sigma
+                           the posterior distribution. Default is 16 and 84, corresponding to 1-sigma
                            for a guassian distribtuion
       :type errp_(lo,hi): float (optional)
       :param save_results: If true will save results to file. If input is a file, will add

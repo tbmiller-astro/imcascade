@@ -5,7 +5,7 @@
 
 .. autoapi-nested-parse::
 
-   imcascade: A non-parametric framework for fitting astronomical sources in 2D using series of Gaussians
+   imcascade: Fitting astronomical images using a 'cascade' of Gaussians
 
 
 
@@ -45,11 +45,11 @@ Attributes
 
 
 .. data:: __version__
-   :annotation: = 0.1
+   :annotation: = 1.0
 
    
 
-.. class:: Fitter(img, sig, psf_sig, psf_a, weight=None, mask=None, sky_model=True, render_mode='hybrid', log_weight_scale=True, verbose=True, psf_shape=None, init_dict={}, bounds_dict={}, log_file=None)
+.. class:: Fitter(img, sig, psf_sig, psf_a, weight=None, mask=None, sky_model=True, sky_type='tilted-plane', render_mode='hybrid', log_weight_scale=True, verbose=True, psf_shape=None, init_dict={}, bounds_dict={}, log_file=None)
 
 
    Bases: :py:obj:`imcascade.mgm.MultiGaussModel`
@@ -79,6 +79,9 @@ Attributes
    :param sky_model: If True will incorperate a tilted plane sky model. Reccomended to be set
                      to True
    :type sky_model: bool, optional
+   :param sky_type: Function used to model sky. Default is tilted plane with 3 parameters, const bkg
+                    and slopes in each directin. 'flat' uses constant background model with 1 parameter.
+   :type sky_type: str, 'tilted-plane' or 'flat'
    :param render_mode: Option to decide how to render models. 'erf' analytically computes
                        the integral over the pixel of each profile therefore is more accurate
                        but more computationally intensive. 'gauss' assumes the center of a pixel
@@ -229,7 +232,7 @@ Attributes
 
    .. method:: run_dynesty(self, method='full', sampler_kwargs={}, run_nested_kwargs={}, prior='min_results')
 
-      Function to run dynesty to sample the posterier distribution using either the
+      Function to run dynesty to sample the posterior distribution using either the
       'full' methods which explores all paramters, or the 'express' method which sets
       the structural parameters.
 
@@ -248,12 +251,12 @@ Attributes
                     Defualt is `min_results`
       :type prior: 'min_results' or 'uniform'
 
-      :returns: **Posterior** -- Posterier distribution derrived. If method is 'express', the first 4 columns,
+      :returns: **Posterior** -- posterior distribution derrived. If method is 'express', the first 4 columns,
                 containg x0, y0, PA and q, are all the same and equal to values used to pre-render the images
       :rtype: Array
 
 
-   .. method:: save_results(self, file_name, run_basic_analysis=True, thin_posterier=1, zpt=None, cutoff=None, errp_lo=16, errp_hi=84)
+   .. method:: save_results(self, file_name, run_basic_analysis=True, thin_posterior=1, zpt=None, cutoff=None, errp_lo=16, errp_hi=84)
 
       Function to save results after run_ls_min, run_dynesty and/or run_emcee is performed. Will be saved as an ASDF file.
 
@@ -262,13 +265,13 @@ Attributes
       :param run_basic_analysis: If true will run ImcascadeResults.run_basic_analysis
       :type run_basic_analysis: Bool (default True)
 
-      :returns: **Posterior** -- Posterier distribution derrived. If method is 'express', the first 4 columns,
+      :returns: **Posterior** -- posterior distribution derrived. If method is 'express', the first 4 columns,
                 containg x0,y0,PA and q, are all the same and equal to values used to pre-rended the images
       :rtype: Array
 
 
 
-.. class:: ImcascadeResults(Obj, thin_posterier=1)
+.. class:: ImcascadeResults(Obj, thin_posterior=1)
 
 
    A class used for collating imcascade results and performing analysis
@@ -276,15 +279,15 @@ Attributes
    :param Obj: Object which contains the data to be analyzed. Can be a Fitter object
                once the run_(ls_min,dynesty, emcee) has been ran. If it is a dictionay
                needs to contain, at bare minmum the variables sig, Ndof, Ndof_sky,
-               Ndof_gauss, log_weight_scale and either min_param or posterier.
+               Ndof_gauss, log_weight_scale and either min_param or posterior.
                If a string is passed it will be interreted as a file locations with
                an ASDF file containing the neccesary information.
    :type Obj: imcascade.fitter.Fitter class, dictionary or str
-   :param thin_posterier: Factor by which to thin the posterier distribution by. While one wants
-                          to ensure the posterier is large enough, some of this analysis can
+   :param thin_posterior: Factor by which to thin the posterior distribution by. While one wants
+                          to ensure the posterior is large enough, some of this analysis can
                           take time if you have >10^6 samples so this is one way to speed up
                           this task but use with caution.
-   :type thin_posterier: int (optional)
+   :type thin_posterior: int (optional)
 
    .. method:: calc_flux(self, cutoff=None)
 
@@ -464,7 +467,7 @@ Attributes
                      around the half-width of the image or the largest gaussian width use
       :type cutoff: float (optional)
       :param errp_(lo,hi): percentiles to be used to calculate the lower and upper error bars from
-                           the posterier distribution. Default is 16 and 84, corresponding to 1-sigma
+                           the posterior distribution. Default is 16 and 84, corresponding to 1-sigma
                            for a guassian distribtuion
       :type errp_(lo,hi): float (optional)
       :param save_results: If true will save results to file. If input is a file, will add

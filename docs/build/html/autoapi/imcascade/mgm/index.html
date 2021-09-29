@@ -227,7 +227,7 @@
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="imcascade.mgm.MultiGaussModel">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">imcascade.mgm.</span></span><span class="sig-name descname"><span class="pre">MultiGaussModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sky_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">render_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_weight_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.MultiGaussModel" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">imcascade.mgm.</span></span><span class="sig-name descname"><span class="pre">MultiGaussModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sky_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sky_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tilted-plane'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">render_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_weight_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.MultiGaussModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>A class used to generate models based series of Gaussians</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -320,25 +320,6 @@ so use with caution.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="imcascade.mgm.MultiGaussModel.get_sky_model">
-<span class="sig-name descname"><span class="pre">get_sky_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.MultiGaussModel.get_sky_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function used to calculate tilted-plane sky model</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>args</strong> (<em>(</em><em>a</em><em>,</em><em>b</em><em>,</em><em>c</em><em>) </em><em>(</em><em>float</em><em>,</em><em>float</em><em>,</em><em>float</em><em>)</em>) – a - overall normalization
-b - slope in x direction
-c - slope in y direction</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>sky_model</strong> – Model for sky background based on given parameters, same shape as ‘shape’</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>2D Array</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="imcascade.mgm.MultiGaussModel.make_model">
 <span class="sig-name descname"><span class="pre">make_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_stack</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.MultiGaussModel.make_model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to generate model image based on given paramters array.
@@ -349,6 +330,46 @@ This version assumaes the gaussian weights are given in linear scale</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><strong>model_image</strong> – Generated model image as the sum of all components plus sky, if included</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>2D Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.mgm.MultiGaussModel.get_sky_model_flat">
+<span class="sig-name descname"><span class="pre">get_sky_model_flat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.MultiGaussModel.get_sky_model_flat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to calculate flat sky model</p>
+<dl class="simple">
+<dt>Parameters</dt><dd></dd>
+</dl>
+<p>args: (a,) (float,float,float)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>sky_model</strong> – Model for sky background based on given parameters, same shape as ‘shape’</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>2D Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.mgm.MultiGaussModel.get_sky_model_tp">
+<span class="sig-name descname"><span class="pre">get_sky_model_tp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.mgm.MultiGaussModel.get_sky_model_tp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to calculate tilted-plane sky model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> (<em>(</em><em>a</em><em>,</em><em>b</em><em>,</em><em>c</em><em>) </em><em>(</em><em>float</em><em>,</em><em>float</em><em>,</em><em>float</em><em>)</em>) – </p></li>
+<li><p><strong>- overall normalization</strong> (<em>a</em>) – </p></li>
+<li><p><strong>- slope in x direction</strong> (<em>b</em>) – </p></li>
+<li><p><strong>- slope in y direction</strong> (<em>c</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>sky_model</strong> – Model for sky background based on given parameters, same shape as ‘shape’</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>2D Array</p>

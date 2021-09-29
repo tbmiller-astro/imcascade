@@ -3,7 +3,7 @@ Installation
 
 The source code for ``imcascade`` is stored on `github <https://github.com/tbmiller-astro/imcascade>`_
 
-To install ``imcascade`` simply clone the github repo and run the setup.py install script
+To install ``imcascade`` simply clone the github repo and run the setup.py install script. This is the best way to make sure you are using the most up to date version.
 
 .. code-block:: bash
 
@@ -12,7 +12,12 @@ To install ``imcascade`` simply clone the github repo and run the setup.py insta
   $ cd imcascade
   $ python setup.py install
 
-We are planning to upload ``imcascade`` to PyPI for even easier installation using ``pip`` so check back soon!
+We have also uploaded our code to PyPI so you can install ``imcascade`` with pip
+
+.. code-block:: bash
+
+  $ pip install imcascade
+
 
 Dependencies
 ------------

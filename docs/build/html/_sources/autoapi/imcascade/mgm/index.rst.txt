@@ -28,7 +28,7 @@ Functions
 
 
 
-.. class:: MultiGaussModel(shape, sig, psf_sig, psf_a, verbose=True, sky_model=True, render_mode='hybrid', log_weight_scale=True, psf_shape=None)
+.. class:: MultiGaussModel(shape, sig, psf_sig, psf_a, verbose=True, sky_model=True, sky_type='tilted-plane', render_mode='hybrid', log_weight_scale=True, psf_shape=None)
 
 
    A class used to generate models based series of Gaussians
@@ -112,19 +112,6 @@ Functions
       :rtype: 3D array
 
 
-   .. method:: get_sky_model(self, args)
-
-      Function used to calculate tilted-plane sky model
-
-      :param args: a - overall normalization
-                   b - slope in x direction
-                   c - slope in y direction
-      :type args: (a,b,c) (float,float,float)
-
-      :returns: **sky_model** -- Model for sky background based on given parameters, same shape as 'shape'
-      :rtype: 2D Array
-
-
    .. method:: make_model(self, param, return_stack=False)
 
       Function to generate model image based on given paramters array.
@@ -134,6 +121,32 @@ Functions
       :type param: array
 
       :returns: **model_image** -- Generated model image as the sum of all components plus sky, if included
+      :rtype: 2D Array
+
+
+   .. method:: get_sky_model_flat(self, args)
+
+      Function used to calculate flat sky model
+
+      Parameters
+                  ----------
+      args: (a,) (float,float,float)
+
+      :returns: **sky_model** -- Model for sky background based on given parameters, same shape as 'shape'
+      :rtype: 2D Array
+
+
+   .. method:: get_sky_model_tp(self, args)
+
+      Function used to calculate tilted-plane sky model
+
+      :param args:
+      :type args: (a,b,c) (float,float,float)
+      :param a - overall normalization:
+      :param b - slope in x direction:
+      :param c - slope in y direction:
+
+      :returns: **sky_model** -- Model for sky background based on given parameters, same shape as 'shape'
       :rtype: 2D Array
 
 

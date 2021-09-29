@@ -100,7 +100,7 @@ Attributes
    :type bounds_dict: dict (optional)
 
 
-.. class:: Fitter(img, sig, psf_sig, psf_a, weight=None, mask=None, sky_model=True, render_mode='hybrid', log_weight_scale=True, verbose=True, psf_shape=None, init_dict={}, bounds_dict={}, log_file=None)
+.. class:: Fitter(img, sig, psf_sig, psf_a, weight=None, mask=None, sky_model=True, sky_type='tilted-plane', render_mode='hybrid', log_weight_scale=True, verbose=True, psf_shape=None, init_dict={}, bounds_dict={}, log_file=None)
 
 
    Bases: :py:obj:`imcascade.mgm.MultiGaussModel`
@@ -130,6 +130,9 @@ Attributes
    :param sky_model: If True will incorperate a tilted plane sky model. Reccomended to be set
                      to True
    :type sky_model: bool, optional
+   :param sky_type: Function used to model sky. Default is tilted plane with 3 parameters, const bkg
+                    and slopes in each directin. 'flat' uses constant background model with 1 parameter.
+   :type sky_type: str, 'tilted-plane' or 'flat'
    :param render_mode: Option to decide how to render models. 'erf' analytically computes
                        the integral over the pixel of each profile therefore is more accurate
                        but more computationally intensive. 'gauss' assumes the center of a pixel
@@ -280,7 +283,7 @@ Attributes
 
    .. method:: run_dynesty(self, method='full', sampler_kwargs={}, run_nested_kwargs={}, prior='min_results')
 
-      Function to run dynesty to sample the posterier distribution using either the
+      Function to run dynesty to sample the posterior distribution using either the
       'full' methods which explores all paramters, or the 'express' method which sets
       the structural parameters.
 
@@ -299,12 +302,12 @@ Attributes
                     Defualt is `min_results`
       :type prior: 'min_results' or 'uniform'
 
-      :returns: **Posterior** -- Posterier distribution derrived. If method is 'express', the first 4 columns,
+      :returns: **Posterior** -- posterior distribution derrived. If method is 'express', the first 4 columns,
                 containg x0, y0, PA and q, are all the same and equal to values used to pre-render the images
       :rtype: Array
 
 
-   .. method:: save_results(self, file_name, run_basic_analysis=True, thin_posterier=1, zpt=None, cutoff=None, errp_lo=16, errp_hi=84)
+   .. method:: save_results(self, file_name, run_basic_analysis=True, thin_posterior=1, zpt=None, cutoff=None, errp_lo=16, errp_hi=84)
 
       Function to save results after run_ls_min, run_dynesty and/or run_emcee is performed. Will be saved as an ASDF file.
 
@@ -313,7 +316,7 @@ Attributes
       :param run_basic_analysis: If true will run ImcascadeResults.run_basic_analysis
       :type run_basic_analysis: Bool (default True)
 
-      :returns: **Posterior** -- Posterier distribution derrived. If method is 'express', the first 4 columns,
+      :returns: **Posterior** -- posterior distribution derrived. If method is 'express', the first 4 columns,
                 containg x0,y0,PA and q, are all the same and equal to values used to pre-rended the images
       :rtype: Array
 

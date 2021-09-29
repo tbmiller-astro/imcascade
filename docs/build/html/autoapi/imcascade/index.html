@@ -187,7 +187,7 @@
 </style>
 <div class="section" id="module-imcascade">
 <span id="imcascade"></span><h1><a class="reference internal" href="#module-imcascade" title="imcascade"><code class="xref py py-mod docutils literal notranslate"><span class="pre">imcascade</span></code></a><a class="headerlink" href="#module-imcascade" title="Permalink to this headline">¶</a></h1>
-<p>imcascade: A non-parametric framework for fitting astronomical sources in 2D using series of Gaussians</p>
+<p>imcascade: Fitting astronomical images using a ‘cascade’ of Gaussians</p>
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
@@ -234,12 +234,12 @@
 </table>
 <dl class="py data">
 <dt class="sig sig-object py" id="imcascade.__version__">
-<span class="sig-prename descclassname"><span class="pre">imcascade.</span></span><span class="sig-name descname"><span class="pre">__version__</span></span><em class="property"> <span class="pre">=</span> <span class="pre">0.1</span></em><a class="headerlink" href="#imcascade.__version__" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">imcascade.</span></span><span class="sig-name descname"><span class="pre">__version__</span></span><em class="property"> <span class="pre">=</span> <span class="pre">1.0</span></em><a class="headerlink" href="#imcascade.__version__" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="imcascade.Fitter">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">imcascade.</span></span><span class="sig-name descname"><span class="pre">Fitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sky_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">render_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_weight_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.Fitter" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">imcascade.</span></span><span class="sig-name descname"><span class="pre">Fitter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sky_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sky_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tilted-plane'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">render_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hybrid'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_weight_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.Fitter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="mgm/index.html#imcascade.mgm.MultiGaussModel" title="imcascade.mgm.MultiGaussModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">imcascade.mgm.MultiGaussModel</span></code></a></p>
 <p>A Class used fit images with MultiGaussModel</p>
 <p>This is the main class used to fit <code class="docutils literal notranslate"><span class="pre">imcascade</span></code> models</p>
@@ -260,6 +260,8 @@ the pixels to be masked. If set to ‘None’ then will not mask any
 pixels. In practice, the weights of masked pixels is set to ‘0’.</p></li>
 <li><p><strong>sky_model</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True will incorperate a tilted plane sky model. Reccomended to be set
 to True</p></li>
+<li><p><strong>sky_type</strong> (<em>str</em><em>, </em><em>'tilted-plane'</em><em> or </em><em>'flat'</em>) – Function used to model sky. Default is tilted plane with 3 parameters, const bkg
+and slopes in each directin. ‘flat’ uses constant background model with 1 parameter.</p></li>
 <li><p><strong>render_mode</strong> (<em>'hybrid'</em><em>, </em><em>'erf'</em><em> or </em><em>'gauss'</em>) – Option to decide how to render models. ‘erf’ analytically computes
 the integral over the pixel of each profile therefore is more accurate
 but more computationally intensive. ‘gauss’ assumes the center of a pixel
@@ -466,7 +468,7 @@ unifrom priors defined by self.lb and self.ub</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="imcascade.Fitter.run_dynesty">
 <span class="sig-name descname"><span class="pre">run_dynesty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'full'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampler_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_nested_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'min_results'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.Fitter.run_dynesty" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to run dynesty to sample the posterier distribution using either the
+<dd><p>Function to run dynesty to sample the posterior distribution using either the
 ‘full’ methods which explores all paramters, or the ‘express’ method which sets
 the structural parameters.</p>
 <dl class="field-list simple">
@@ -485,7 +487,7 @@ Defualt is <cite>min_results</cite></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>Posterior</strong> – Posterier distribution derrived. If method is ‘express’, the first 4 columns,
+<dd class="field-even"><p><strong>Posterior</strong> – posterior distribution derrived. If method is ‘express’, the first 4 columns,
 containg x0, y0, PA and q, are all the same and equal to values used to pre-render the images</p>
 </dd>
 <dt class="field-odd">Return type</dt>
@@ -496,7 +498,7 @@ containg x0, y0, PA and q, are all the same and equal to values used to pre-rend
 
 <dl class="py method">
 <dt class="sig sig-object py" id="imcascade.Fitter.save_results">
-<span class="sig-name descname"><span class="pre">save_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_basic_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thin_posterier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zpt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errp_lo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errp_hi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">84</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.Fitter.save_results" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_basic_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thin_posterior</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zpt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errp_lo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errp_hi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">84</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.Fitter.save_results" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to save results after run_ls_min, run_dynesty and/or run_emcee is performed. Will be saved as an ASDF file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -506,7 +508,7 @@ containg x0, y0, PA and q, are all the same and equal to values used to pre-rend
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>Posterior</strong> – Posterier distribution derrived. If method is ‘express’, the first 4 columns,
+<dd class="field-even"><p><strong>Posterior</strong> – posterior distribution derrived. If method is ‘express’, the first 4 columns,
 containg x0,y0,PA and q, are all the same and equal to values used to pre-rended the images</p>
 </dd>
 <dt class="field-odd">Return type</dt>
@@ -519,7 +521,7 @@ containg x0,y0,PA and q, are all the same and equal to values used to pre-rended
 
 <dl class="py class">
 <dt class="sig sig-object py" id="imcascade.ImcascadeResults">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">imcascade.</span></span><span class="sig-name descname"><span class="pre">ImcascadeResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thin_posterier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.ImcascadeResults" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">imcascade.</span></span><span class="sig-name descname"><span class="pre">ImcascadeResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thin_posterior</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.ImcascadeResults" title="Permalink to this definition">¶</a></dt>
 <dd><p>A class used for collating imcascade results and performing analysis</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -527,11 +529,11 @@ containg x0,y0,PA and q, are all the same and equal to values used to pre-rended
 <li><p><strong>Obj</strong> (<em>imcascade.fitter.Fitter class</em><em>, </em><em>dictionary</em><em> or </em><em>str</em>) – Object which contains the data to be analyzed. Can be a Fitter object
 once the run_(ls_min,dynesty, emcee) has been ran. If it is a dictionay
 needs to contain, at bare minmum the variables sig, Ndof, Ndof_sky,
-Ndof_gauss, log_weight_scale and either min_param or posterier.
+Ndof_gauss, log_weight_scale and either min_param or posterior.
 If a string is passed it will be interreted as a file locations with
 an ASDF file containing the neccesary information.</p></li>
-<li><p><strong>thin_posterier</strong> (<em>int</em><em> (</em><em>optional</em><em>)</em>) – Factor by which to thin the posterier distribution by. While one wants
-to ensure the posterier is large enough, some of this analysis can
+<li><p><strong>thin_posterior</strong> (<em>int</em><em> (</em><em>optional</em><em>)</em>) – Factor by which to thin the posterior distribution by. While one wants
+to ensure the posterior is large enough, some of this analysis can
 take time if you have &gt;10^6 samples so this is one way to speed up
 this task but use with caution.</p></li>
 </ul>
@@ -784,7 +786,7 @@ magnitude</p></li>
 <li><p><strong>cutoff</strong> (<em>float</em><em> (</em><em>optional</em><em>)</em>) – Radius out to which to consider the profile. Generally this should be
 around the half-width of the image or the largest gaussian width use</p></li>
 <li><p><strong>errp_</strong><strong>(</strong><strong>lo</strong><strong>,</strong><strong>hi</strong><strong>)</strong> (<em>float</em><em> (</em><em>optional</em><em>)</em>) – percentiles to be used to calculate the lower and upper error bars from
-the posterier distribution. Default is 16 and 84, corresponding to 1-sigma
+the posterior distribution. Default is 16 and 84, corresponding to 1-sigma
 for a guassian distribtuion</p></li>
 <li><p><strong>save_results</strong> (<em>bool</em><em> (</em><em>optional</em><em>)</em>) – If true will save results to file. If input is a file, will add
 to given file, else will save to file denoted by ‘save_file’ (see below)</p></li>

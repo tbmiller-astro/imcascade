@@ -1,7 +1,7 @@
 Quickstart Guide
 ================
 
-``imcascade`` is a non-parametric framework for fitting objects in astronomical images. This is accomplished by modelling the objects a series of Gaussians. For full details please read our paper here: ``Put ArXiv link here``.
+``imcascade`` is a method to fit sources in astronomical images. This is accomplished by modelling the objects using multi-Gaussian expansion which models the galaxy as a mixture of Gaussians. For full details please read our paper here: `here <https://arxiv.org/abs/2109.13262>`_.
 
 What follows is a (very) brief introduction to the basic usage of ``imcascade``, please read the users guide for a more in depth discussion
 
@@ -54,4 +54,4 @@ The analysis of results from ``imcascade`` is non-trivial as the free parameters
 
 Additionally ``ImcascadeResuts`` contaains other methods to caluclate the recovered surface brightness profile, curve-of-growth and others
 
-And with that you have fit your first object using imcascade!! Please see the In depth example page to see a much more detailed example or the advanced guide for a discussion of more advanceded features.
+And with that you have fit your first object using ``imcascade``!! Please see the In depth example page to see a much more detailed example or the advanced guide for a discussion of more advanceded features.

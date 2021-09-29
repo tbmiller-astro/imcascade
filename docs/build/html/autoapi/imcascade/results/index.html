@@ -253,7 +253,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="imcascade.results.ImcascadeResults">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">imcascade.results.</span></span><span class="sig-name descname"><span class="pre">ImcascadeResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thin_posterier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.results.ImcascadeResults" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">imcascade.results.</span></span><span class="sig-name descname"><span class="pre">ImcascadeResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thin_posterior</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.results.ImcascadeResults" title="Permalink to this definition">¶</a></dt>
 <dd><p>A class used for collating imcascade results and performing analysis</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -261,11 +261,11 @@
 <li><p><strong>Obj</strong> (<em>imcascade.fitter.Fitter class</em><em>, </em><em>dictionary</em><em> or </em><em>str</em>) – Object which contains the data to be analyzed. Can be a Fitter object
 once the run_(ls_min,dynesty, emcee) has been ran. If it is a dictionay
 needs to contain, at bare minmum the variables sig, Ndof, Ndof_sky,
-Ndof_gauss, log_weight_scale and either min_param or posterier.
+Ndof_gauss, log_weight_scale and either min_param or posterior.
 If a string is passed it will be interreted as a file locations with
 an ASDF file containing the neccesary information.</p></li>
-<li><p><strong>thin_posterier</strong> (<em>int</em><em> (</em><em>optional</em><em>)</em>) – Factor by which to thin the posterier distribution by. While one wants
-to ensure the posterier is large enough, some of this analysis can
+<li><p><strong>thin_posterior</strong> (<em>int</em><em> (</em><em>optional</em><em>)</em>) – Factor by which to thin the posterior distribution by. While one wants
+to ensure the posterior is large enough, some of this analysis can
 take time if you have &gt;10^6 samples so this is one way to speed up
 this task but use with caution.</p></li>
 </ul>
@@ -518,7 +518,7 @@ magnitude</p></li>
 <li><p><strong>cutoff</strong> (<em>float</em><em> (</em><em>optional</em><em>)</em>) – Radius out to which to consider the profile. Generally this should be
 around the half-width of the image or the largest gaussian width use</p></li>
 <li><p><strong>errp_</strong><strong>(</strong><strong>lo</strong><strong>,</strong><strong>hi</strong><strong>)</strong> (<em>float</em><em> (</em><em>optional</em><em>)</em>) – percentiles to be used to calculate the lower and upper error bars from
-the posterier distribution. Default is 16 and 84, corresponding to 1-sigma
+the posterior distribution. Default is 16 and 84, corresponding to 1-sigma
 for a guassian distribtuion</p></li>
 <li><p><strong>save_results</strong> (<em>bool</em><em> (</em><em>optional</em><em>)</em>) – If true will save results to file. If input is a file, will add
 to given file, else will save to file denoted by ‘save_file’ (see below)</p></li>
