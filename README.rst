@@ -10,7 +10,7 @@ imcascade
 
 Citation
 --------
-``imcascade`` is open source software made available under the MIT license, written by Tim Miller and Pieter van Dokkum. If you use this package in your work please cite Miller & van Dokkum (2021) (Link to paper forthcoming)
+``imcascade`` is open source software made available under the MIT license, written by Tim Miller and Pieter van Dokkum. If you use this package in your work please `Miller & van Dokkum (2021) <https://arxiv.org/abs/2109.13262>`_
 
 Help and Issues
 ---------------
