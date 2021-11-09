@@ -33,10 +33,17 @@ radii: 1D array
 """
 
         if type(psf_img) == str:
-            fits_file = fits.open(psf_img)
+            try:
+                fits_file = fits.open(psf_img)
+            except:
+                raise TypeError(f"The file '{ psf_img }' could not be opened as a FITS file")
             self.psf_data = np.array(fits_file[0].data, dtype = '<f4')
         elif type(psf_img) == np.ndarray:
+            if psf_img.ndim != 2:
+                raise TypeError("Array must be 2D image of PSF")
             self.psf_data = np.array(psf_img, dtype = '<f4')
+        else:
+            raise TypeError("psf_img must be either a numpy array or string with the location of a FITS file")
         self.oversamp = oversamp
 
         self.cent_pix_x = np.where(self.psf_data == np.max(self.psf_data) )[0][0]

@@ -10,7 +10,7 @@ def readme():
 
 setuptools.setup(
     name="imcascade",
-    version="1.0.1",
+    version="1.0",
     author="Tim Miller",
     author_email="tim.miller@yale.edu",
     description="imcascade: Fitting astronomical images using a 'cascade' of Gaussians",
