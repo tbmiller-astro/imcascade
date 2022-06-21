@@ -1,22 +1,25 @@
+import jax
 import numpy as np
 import asdf
 import logging
-from scipy.optimize import least_squares
+from scipy.optimize import least_squares, minimize, Bounds
 from scipy.stats import norm, truncnorm
 
-from imcascade.mgm import MultiGaussModel
+from imcascade.mgm import V2MGM, MultiGaussModel
 from imcascade.results import ImcascadeResults,vars_to_use
-from imcascade.utils import dict_add, guess_weights,log_scale,expand_mask
-from astropy.stats.biweight import biweight_location as bwl
-from astropy.stats.biweight import biweight_scale as bws
+from imcascade.utils import dict_add, log_scale,expand_mask,reg_resid,parse_input_dicts
+from astropy.io import fits
+
+import jax.numpy as jnp
 
 import dynesty
 from dynesty import utils as dyfunc
+import pymc3 as pm
+import theano.tensor as tt
 
 log2pi = np.log(2.*np.pi)
 
-def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re = None, flux = None,
- psf_oversamp = 1, sky_model = True, log_file = None, readnoise = None, gain = None, exp_time = None):
+def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re = None, flux = None, psf_oversamp = 1, sky_model = True, log_file = None, readnoise = None, gain = None, exp_time = None):
     """Function used to help Initialize Fitter instance from simple inputs
 
     Parameters
@@ -212,6 +215,219 @@ def fitter_from_ASDF(file_name, init_dict= {}, bounds_dict = {}):
     inst = Fitter(img,sig,psf_sig,psf_a,init_dict = init_dict, bounds_dict = bounds_dict, **kwargs)
     return inst
 
+ # TODO Implement pymc3 model set up
+ #? How well does Hessian approx posterior?
+
+class V2Fitter(V2MGM):
+    """A Class used fit images with MultiGaussModel
+
+    This is the main class used to fit ``imcascade`` models
+
+    Parameters
+    ----------
+    img: 2D Array
+        Data to be fit, it is assumed to be a cutout with the object of interest
+        in the center of the image
+    sig: 1D Array
+        Widths of Gaussians to be used in MultiGaussModel
+    psf_sig: 1D array, None
+        Width of Gaussians used to approximate psf
+    psf_a: 1D array, None
+        Weights of Gaussians used to approximate psf
+        If both psf_sig and psf_a are None then will run in Non-psf mode
+    weight: 2D Array, optional
+        Array of pixel by pixel weights to be used in fitting. Must be same
+        shape as 'img' If None, all the weights will be set to 1.
+    mask: 2D Array, optional
+        Array with the same shape as 'img' denoting which, if any, pixels
+        to mask  during fitting process. Values of '1' or 'True' values for
+        the pixels to be masked. If set to 'None' then will not mask any
+        pixels. In practice, the weights of masked pixels is set to '0'.
+    sky_model: bool, optional
+        If True will incorperate a tilted plane sky model. Reccomended to be set
+        to True
+    sky_type: str, 'tilted-plane' or 'flat'
+        Function used to model sky. Default is tilted plane with 3 parameters, const bkg
+        and slopes in each directin. 'flat' uses constant background model with 1 parameter.
+    render_mode: 'hybrid', 'erf' or 'gauss'
+        Option to decide how to render models. 'erf' analytically computes
+        the integral over the pixel of each profile therefore is more accurate
+        but more computationally intensive. 'gauss' assumes the center of a pixel
+        provides a reasonble estimate of the average flux in that pixel. 'gauss'
+        is faster but far less accurate for objects which vary on O(pixel size),
+        so use with caution. 'hybrid' is the defualt, uses 'erf' for components with width < 5
+        to ensure accuracy and uses 'gauss' otherwise as it is accurate enough and faster. Also
+        assumes all flux > 5 sigma for components is 0.
+    log_weight_scale: bool, optional
+        Wether to treat weights as log scale, Default True
+    verbose: bool, optional
+        If true will log and print out errors
+    psf_shape: dict, Optional
+        Dictionary containg at 'q' and 'phi' that define the shape of the PSF.
+        Note that this slows down model rendering significantly so only
+        reccomended if neccesary.
+    init_dict: dict, Optional
+        Dictionary specifying initial guesses for least_squares fitting. The code
+        is desigined to make 'intelligent' guesses if none are provided
+    bounds_dict: dict, Optional
+        Dictionary specifying boundss for least_squares fitting and priors. The code
+        is desigined to make 'intelligent' guesses if none are provided
+"""
+    def __init__(self, img, sig, psf_sig, psf_a, weight = None, mask = None,\
+      sky_model = True,sky_type = 'tilted-plane', log_weight_scale = True, q_profile = False,phi_profile = False, verbose = True, psf_shape = None,init_dict = {}, bounds_dict = {}, log_file = None):
+        """Initialize a Task instance"""
+        self.img  = img
+        self.verbose = verbose
+
+        if log_file is None:
+            handler = logging.StreamHandler()
+        else:
+            handler = logging.FileHandler(log_file)
+
+        logging.basicConfig(format = "%(asctime)s - %(message)s", level = logging.INFO,
+            handlers = [handler,])
+        self.logger = logging.getLogger()
+
+        if not sky_type in ['tilted-plane', 'flat']:
+            if verbose: self.logger.info("Incompatible sky_type, must choose 'tilted-plane' or 'flat'! Setting to 'tilted-plane'")
+            sky_type = 'tilted-plane'
+
+        if psf_sig is None or psf_a is None:
+            if verbose: self.logger.info('No PSF input, running in non-psf mode')
+
+        if weight is None:
+            self.weight = np.ones(img.shape)
+        else:
+            if weight.shape != self.img.shape:
+                raise ValueError("'weight' array must have same shape as 'img'")
+            self.weight = weight
+
+
+        if mask is not None:
+            if self.weight.shape != self.img.shape:
+                raise ValueError("'mask' array must have same shape as 'img' ")
+            self.weight[np.where(mask == 1)] = 0
+            self.mask = mask
+        else:
+            self.mask = np.zeros(self.img.shape)
+
+        self.inv_mask = np.abs(self.mask-1.)
+
+        if np.sum(np.isnan(self.img) + np.sum(np.isnan(self.weight))) > 0:
+            where_inf = np.where(np.isnan(self.img) + np.isnan(self.weight))
+            self.logger.info("Masking nan values at locations:")
+            self.logger.info(where_inf)
+            self.img[where_inf] = 0
+            self.weight[where_inf] = 0
+            self.mask[where_inf] = 1
+
+
+        super().__init__(self.img.shape,sig, psf_sig, psf_a,
+          verbose = verbose, sky_model = sky_model,sky_type = sky_type, log_weight_scale = log_weight_scale, psf_shape = psf_shape, q_profile=q_profile, phi_profile=phi_profile)
+
+        self.npix = self.img.shape[0]*self.img.shape[1] - np.sum(self.mask)
+
+        bounds_dict, init_dict, lb,ub, param_init = parse_input_dicts(bounds_dict,init_dict, self)
+        
+        self.init_dict = init_dict
+        self.bounds_dict = bounds_dict
+        self.param_init = param_init
+        self.lb = lb
+        self.ub = ub
+        self.bnds = Bounds(self.lb,self.ub)
+    
+    def run_ls_min(self, ls_kwargs = {}, lasso_k = 1e-4, lasso_inds = np.arange(3)):
+        """ Function to run a least_squares minimization routine using pre-determined
+        inital guesses and bounds.
+
+        Utilizes the scipy least_squares routine (https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html)
+
+        Parameters
+        ----------
+        ls_kwargs: dict, optional
+            Optional list of arguments to be passes to least_squares routine
+
+        Returns
+        -------
+        min_param: 1D array
+            Returns a 1D array containing the optimized parameters that describe
+            the best fit model.
+"""    
+        if self.verbose: self.logger.info('Compiling JAX functions')
+
+        def loss_base(param):
+            chi_2 = jnp.sum( (self.img - self.make_model(param))**2 *self.weight )
+            # mean_lasso = jnp.mean(param[self.Ndof_struct+lasso_inds])
+            # lasso_loss =  lasso_k * jnp.abs(param[self.Ndof_struct+lasso_inds] - mean_lasso).sum() *jnp.sum(self.inv_mask) 
+            return chi_2# + lasso_loss
+        
+        loss_jit = jax.jit(loss_base)
+        _ = loss_jit(self.param_init)
+
+        loss_jac = jax.jacfwd(loss_base)
+        _ = loss_jac(self.param_init)
+
+        loss_hess = jax.jacfwd(jax.jacfwd(loss_base) )
+        _ = loss_hess(self.param_init)
+
+        if self.verbose: self.logger.info('Running least squares minimization')
+        
+        ls_kwargs = dict_add(ls_kwargs,'method','TNC')
+        min_res = minimize(loss_jit, self.param_init,jac = loss_jac,hess = loss_hess, bounds = self.bnds, **ls_kwargs)
+        self.min_res = min_res
+        self.min_param = min_res.x
+        if self.verbose: self.logger.info('Finished least squares minimization')
+        
+        hess_min = loss_hess(self.min_param)
+        self.hess_min = hess_min
+
+        return self.min_param
+
+    def sample_min_param_covariance(self, num = 10000):
+        assert 'hess_min' in dir(self), "Need to run 'run_ls_min' to calculate min_param"
+
+        #Find Full covariance matrix from hessian
+        cov_full =  jnp.linalg.inv(self.hess_min) 
+        # Perfrom Cholesky decomp to find triangular covariance
+        cov = jnp.linalg.cholesky(cov_full) 
+
+        #Sample from covariance
+        samps = jnp.matmul(cov,np.random.normal(size = (self.Ndof, num))).T + self.min_param
+
+        return samps
+
+    def q_prof(self, q_params, calc = jnp):
+        if calc is jnp:
+            arr_func = jnp.array
+        else:
+            arr_func = tt.as_tensor_variable
+        
+        return self.lin_interp(self.sig, q_params[:3], arr_func([q_params[3],q_params[4], 4*self.init_dict['re']] ) , calc = calc )
+    
+    def phi_prof(self, phi_params):
+        phi0,phi1,phi2,r_phi1 = phi_params
+        return self.lin_interp(self.sig,  jnp.array([phi0,phi1,phi2]),  jnp.array([0,r_phi1, 3*self.init_dict['re']] ) )
+        
+
+    def lin_interp(self,r, x_list,r_list, calc = jnp):
+
+        if calc is jnp:
+            x_interp = jnp.interp(r, r_list,x_list,left = x_list[0], right = x_list[-1])
+        
+        if calc is pm.math:
+            x0,x1,x2 = x_list
+            r0,r1,r2 = r_list
+            x_interp = pm.math.switch(pm.math.lt(r,r0), x0,
+                pm.math.switch(
+                pm.math.lt(r,r1), (x0*(r1-r) + x1*(r - r0))/(r1-r0), 
+                pm.math.switch(
+                pm.math.lt(r,r2),(x1*(r2-r) + x2*(r - r1))/(r2-r1) , x2 ) 
+                ) )
+        
+        return x_interp
+
+
+
 class Fitter(MultiGaussModel):
     """A Class used fit images with MultiGaussModel
 
@@ -241,7 +457,7 @@ class Fitter(MultiGaussModel):
         If True will incorperate a tilted plane sky model. Reccomended to be set
         to True
     sky_type: str, 'tilted-plane' or 'flat'
-        Function used to model sky. Default is tilted plane with 3 parameters, const bkg 
+        Function used to model sky. Default is tilted plane with 3 parameters, const bkg
         and slopes in each directin. 'flat' uses constant background model with 1 parameter.
     render_mode: 'hybrid', 'erf' or 'gauss'
         Option to decide how to render models. 'erf' analytically computes
@@ -268,12 +484,12 @@ class Fitter(MultiGaussModel):
         is desigined to make 'intelligent' guesses if none are provided
 """
     def __init__(self, img, sig, psf_sig, psf_a, weight = None, mask = None,\
-      sky_model = True,sky_type = 'tilted-plane', render_mode = 'hybrid', log_weight_scale = True, verbose = True,
+      sky_model = True,sky_type = 'tilted-plane',reg_k = 0, render_mode = 'hybrid', log_weight_scale = True, verbose = True,
       psf_shape = None,init_dict = {}, bounds_dict = {}, log_file = None):
         """Initialize a Task instance"""
         self.img  = img
         self.verbose = verbose
-        
+
         if log_file is None:
             handler = logging.StreamHandler()
         else:
@@ -286,7 +502,7 @@ class Fitter(MultiGaussModel):
         if not sky_type in ['tilted-plane', 'flat']:
             if verbose: self.logger.info("Incompatible sky_type, must choose 'tilted-plane' or 'flat'! Setting to 'tilted-plane'")
             sky_type = 'tilted-plane'
-        
+
         if not render_mode in ['gauss', 'erf','hybrid']:
             if verbose: self.logger.info("Incompatible render mode, must choose 'gauss','erf' or 'hybrid'! Setting to 'hybrid'")
             render_mode = 'hybrid'
@@ -310,6 +526,7 @@ class Fitter(MultiGaussModel):
         else:
             self.mask = np.zeros(self.img.shape)
 
+
         if np.sum(np.isnan(self.img) + np.sum(np.isnan(self.weight))) > 0:
             where_inf = np.where(np.isnan(self.img) + np.isnan(self.weight))
             self.logger.info("Masking nan values at locations:")
@@ -321,108 +538,18 @@ class Fitter(MultiGaussModel):
         self.log_weight = np.zeros(self.weight.shape)
         self.log_weight[self.weight > 0 ] = np.log(self.weight[self.weight > 0])
         self.loglike_const = 0.5*(np.sum(self.log_weight) - log2pi*(np.sum(self.mask == 0)) )
-
+        self.reg_k = reg_k
 
         MultiGaussModel.__init__(self,self.img.shape,sig, psf_sig, psf_a, \
-          verbose = verbose, sky_model = sky_model,sky_type = sky_type, render_mode = render_mode, \
-          log_weight_scale = log_weight_scale, psf_shape = psf_shape)
+          verbose = verbose, sky_model = sky_model,sky_type = sky_type, render_mode = render_mode, log_weight_scale = log_weight_scale, psf_shape = psf_shape)
 
+        self.npix = self.img.shape[0]*self.img.shape[1] - np.sum(self.mask)
 
-        init_dict = dict_add(init_dict, 'x0',self.x_mid)
-        init_dict = dict_add(init_dict, 'y0',self.y_mid)
-        bounds_dict = dict_add(bounds_dict, 'x0',[init_dict['x0'] - 10,init_dict['x0'] + 10])
-        bounds_dict = dict_add(bounds_dict, 'y0',[init_dict['y0'] - 10,init_dict['y0'] + 10])
-
-        init_dict = dict_add(init_dict, 'phi', np.pi/2.)
-        bounds_dict = dict_add(bounds_dict, 'phi', [0,np.pi])
-
-        init_dict = dict_add(init_dict,'q', 0.5)
-        bounds_dict = dict_add(bounds_dict, 'q', [0,1.])
-
-        if sky_model:
-            #Try to make educated guesses about sky model
-
-            #estimate background using median
-            sky0_guess = bwl(self.img[np.where(self.mask == 0)], ignore_nan = True)
-            if np.abs(sky0_guess) < 1e-6:
-                sky0_guess = 1e-4*np.sign(sky0_guess+1e-12)
-            init_dict = dict_add(init_dict, 'sky0', sky0_guess)
-            bounds_dict = dict_add(bounds_dict, 'sky0', [-np.abs(sky0_guess)*10, np.abs(sky0_guess)*10])
-
-            #estimate X and Y slopes using edges
-            use_x_edge = np.where(self.mask[:,-1]*self.mask[:,0] == 0)
-            sky1_guess = bwl(self.img[:,1][use_x_edge] - img[:,0][use_x_edge], ignore_nan = True)/img.shape[0]
-            if np.abs(sky1_guess) < 1e-8:
-                sky1_guess = 1e-6*np.sign(sky1_guess+1e-12)
-            init_dict = dict_add(init_dict, 'sky1', sky1_guess)
-            bounds_dict = dict_add(bounds_dict, 'sky1', [-np.abs(sky1_guess)*10, np.abs(sky1_guess)*10])
-
-            use_y_edge = np.where(self.mask[-1,:]*self.mask[0,:] == 0)
-            sky2_guess = bwl(self.img[-1,:][use_y_edge] - img[0,:][use_y_edge], ignore_nan = True)/img.shape[1]
-            if np.abs(sky2_guess) < 1e-8:
-                sky2_guess = 1e-6*np.sign(sky2_guess+1e-12)
-            init_dict = dict_add(init_dict, 'sky2', sky2_guess)
-            bounds_dict = dict_add(bounds_dict, 'sky2', [-np.abs(sky2_guess)*10, np.abs(sky2_guess)*10])
-
-            if sky_type == 'tilted-plane':
-                init_sky_model =  self.get_sky_model([init_dict['sky0'],init_dict['sky1'],init_dict['sky2']] )
-            else:
-                init_sky_model =  self.get_sky_model([init_dict['sky0'],] )
-
-            A_guess = np.sum( (self.img - init_sky_model )[np.where(self.mask == 0)]  )
-        else:
-            A_guess = np.sum(img)
-
-        #Below assumes all gaussian have same A
-        init_dict = dict_add(init_dict, 'flux', A_guess )
-        init_dict = dict_add(init_dict, 're', 5.)
-
-        a_guess = guess_weights(self.sig, init_dict['re'], init_dict['flux'])
-
-        #If using log scale then adjust initial guesses
-        if self.log_weight_scale:
-            #set minimum possible weight value
-            init_dict = dict_add(init_dict, 'a_max', np.log10(init_dict['flux']))
-            init_dict = dict_add(init_dict, 'a_min', init_dict['a_max'] - 5.)
-
-        else:
-            init_dict = dict_add(init_dict, 'a_max', init_dict['flux'])
-            init_dict = dict_add(init_dict, 'a_min', 0)
-
-        for i in range(self.Ndof_gauss):
-            a_guess_cur = a_guess[i]
-            if a_guess_cur < init_dict['flux']/1e5:
-                a_guess_cur = init_dict['flux']/1e4
-
-            if self.log_weight_scale:
-                init_dict = dict_add(init_dict,'a%i'%i, np.log10(a_guess_cur ) )
-            else:
-                init_dict = dict_add(init_dict,'a%i'%i, a_guess_cur )
-            bounds_dict = dict_add(bounds_dict,'a%i'%i,  [init_dict['a_min'], init_dict['a_max'] ])
-
-        #Now set initial and boundry values once defaults or inputs have been used
-        self.lb = [bounds_dict['x0'][0], bounds_dict['y0'][0], bounds_dict['q'][0], bounds_dict['phi'][0]]
-        self.ub = [bounds_dict['x0'][1], bounds_dict['y0'][1], bounds_dict['q'][1], bounds_dict['phi'][1]]
-
-        self.param_init = np.ones(self.Ndof)
-        self.param_init[0] = init_dict['x0']
-        self.param_init[1] = init_dict['y0']
-        self.param_init[2] = init_dict['q']
-
-        self.param_init[3] = init_dict['phi']
-
-        for i in range(self.Ndof_gauss):
-            self.param_init[4+i] = init_dict['a%i'%i]
-            self.lb.append( bounds_dict['a%i'%i][0] )
-            self.ub.append(bounds_dict['a%i'%i][1] )
-
-        for i in range(self.Ndof_sky):
-            self.param_init[4+self.Ndof_gauss+i] = init_dict['sky%i'%i]
-            self.lb.append(bounds_dict['sky%i'%i][0] )
-            self.ub.append(bounds_dict['sky%i'%i][1] )
-
-        self.lb = np.asarray(self.lb)
-        self.ub = np.asarray(self.ub)
+        bounds_dict, init_dict, lb,ub, param_init = parse_input_dicts(bounds_dict,init_dict, self)
+        
+        self.param_init = param_init
+        self.lb = lb
+        self.ub = ub
         self.bnds = (self.lb,self.ub)
 
     def resid_1d(self,params):
@@ -441,7 +568,10 @@ class Fitter(MultiGaussModel):
         """
         model = self.make_model(params)
         resid = (self.img - model)*np.sqrt(self.weight)
-        return resid.flatten()
+        A_cur = params[4:4+self.Ndof_gauss]
+        reg_resid_cur = np.abs(reg_resid(A_cur[:int(self.Ndof_gauss/2)+1]))
+
+        return np.append(resid.flatten()/(self.npix - self.Ndof),reg_resid_cur*self.reg_k)
 
     def run_ls_min(self, ls_kwargs = {}):
         """ Function to run a least_squares minimization routine using pre-determined

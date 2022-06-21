@@ -2,6 +2,11 @@ import numpy as np
 from scipy.special import gamma
 import itertools
 from astropy.convolution import convolve, Gaussian2DKernel
+from astropy.stats.biweight import biweight_location as bwl
+
+def reg_resid(x):
+    x_expec = (x[:-2] + x[2:])/2
+    return (x_expec - x[1:-1])
 
 def guess_weights(sig, re, flux):
     """ Method to guess the weights of gaussian componenets given an re and flux.
@@ -188,3 +193,131 @@ def min_diff_array(arr):
         if diff < min_diff:
             min_diff = diff
     return min_diff
+
+
+def parse_input_dicts(bounds_dict,init_dict, fitter_class):
+    init_dict = dict_add(init_dict, 're', 5.)
+
+    init_dict = dict_add(init_dict, 'x0',int(fitter_class.img.shape[0]/2) )
+    init_dict = dict_add(init_dict, 'y0',int(fitter_class.img.shape[1]/2) )
+    bounds_dict = dict_add(bounds_dict, 'x0',[init_dict['x0'] - 10,init_dict['x0'] + 10])
+    bounds_dict = dict_add(bounds_dict, 'y0',[init_dict['y0'] - 10,init_dict['y0'] + 10])
+
+    if fitter_class.phi_profile:
+        init_dict = dict_add(init_dict, 'phi', [np.pi/2.,np.pi/2.,np.pi/2., 1.5* init_dict['re'] ] )
+        bounds_dict = dict_add(bounds_dict, 'phi', [[0,np.pi],[0,np.pi],[0,np.pi], [0.5*init_dict['re'], 2.5*init_dict['re'] ] ] )
+    else:
+        init_dict = dict_add(init_dict, 'phi', np.pi/2.)
+        bounds_dict = dict_add(bounds_dict, 'phi', [0,np.pi])
+    
+    if fitter_class.q_profile:
+        init_dict = dict_add(init_dict, 'q', [0.6,0.6,0.6,0.5*init_dict['re'],init_dict['re'] ] )
+        bounds_dict = dict_add(bounds_dict, 'q', [[0.2,1.],[0.2,1.],[0.2,1.],  [0, 1*init_dict['re'] ] ,  [1*init_dict['re'], 3*init_dict['re'] ] ] )
+    else:
+        init_dict = dict_add(init_dict,'q', 0.5)
+        bounds_dict = dict_add(bounds_dict, 'q', [0.2,1.])
+
+    if fitter_class.sky_model:
+        #Try to make educated guesses about sky model
+
+        #estimate background using median
+        sky0_guess = bwl(fitter_class.img[np.where(fitter_class.mask == 0)], ignore_nan = True)
+        if np.abs(sky0_guess) < 1e-6:
+            sky0_guess = 1e-4*np.sign(sky0_guess+1e-12)
+        init_dict = dict_add(init_dict, 'sky0', sky0_guess)
+        bounds_dict = dict_add(bounds_dict, 'sky0', [-np.abs(sky0_guess)*10, np.abs(sky0_guess)*10])
+
+        #estimate X and Y slopes using edges
+        use_x_edge = np.where(fitter_class.mask[:,-1]*fitter_class.mask[:,0] == 0)
+        sky1_guess = bwl(fitter_class.img[:,1][use_x_edge] - fitter_class.img[:,0][use_x_edge], ignore_nan =True)/fitter_class.img.shape[0]
+        if np.abs(sky1_guess) < 1e-8:
+            sky1_guess = 1e-6*np.sign(sky1_guess+1e-12)
+        init_dict = dict_add(init_dict, 'sky1', sky1_guess)
+        bounds_dict = dict_add(bounds_dict, 'sky1', [-np.abs(sky1_guess)*10, np.abs(sky1_guess)*10])
+
+        use_y_edge = np.where(fitter_class.mask[-1,:]*fitter_class.mask[0,:] == 0)
+        sky2_guess = bwl(fitter_class.img[-1,:][use_y_edge] - fitter_class.img[0,:][use_y_edge], ignore_nan =True)/fitter_class.img.shape[1]
+        if np.abs(sky2_guess) < 1e-8:
+            sky2_guess = 1e-6*np.sign(sky2_guess+1e-12)
+        init_dict = dict_add(init_dict, 'sky2', sky2_guess)
+        bounds_dict = dict_add(bounds_dict, 'sky2', [-np.abs(sky2_guess)*10, np.abs(sky2_guess)*10])
+
+        if fitter_class.sky_type == 'tilted-plane':
+            init_sky_model =  fitter_class.get_sky_model([init_dict['sky0'],init_dict['sky1'],init_dict['sky2']] )
+        else:
+            init_sky_model =  fitter_class.get_sky_model([init_dict['sky0'],] )
+
+        A_guess = np.sum( (fitter_class.img - init_sky_model )[np.where(fitter_class.mask == 0)]  )
+    else:
+        A_guess = np.sum(fitter_class.img)
+
+    #Below assumes all gaussian have same A
+    init_dict = dict_add(init_dict, 'flux', A_guess )
+    
+
+    a_guess = guess_weights(fitter_class.sig, init_dict['re'], init_dict['flux'])
+
+    #If using log scale then adjust initial guesses
+    if fitter_class.log_weight_scale:
+        #set minimum possible weight value
+        init_dict = dict_add(init_dict, 'a_max', np.log10(init_dict['flux']))
+        init_dict = dict_add(init_dict, 'a_min', init_dict['a_max'] - 5.)
+
+    else:
+        init_dict = dict_add(init_dict, 'a_max', init_dict['flux'])
+        init_dict = dict_add(init_dict, 'a_min', 0)
+
+    for i in range(fitter_class.Ndof_gauss):
+        a_guess_cur = a_guess[i]
+        if a_guess_cur < init_dict['flux']/1e5:
+            a_guess_cur = init_dict['flux']/1e4
+
+        if fitter_class.log_weight_scale:
+            init_dict = dict_add(init_dict,'a%i'%i, np.log10(a_guess_cur ) )
+        else:
+            init_dict = dict_add(init_dict,'a%i'%i, a_guess_cur )
+        bounds_dict = dict_add(bounds_dict,'a%i'%i,  [init_dict['a_min'], init_dict['a_max'] ])
+
+    #Now set initial and boundry values once defaults or inputs have been used
+    lb = [bounds_dict['x0'][0], bounds_dict['y0'][0], ]
+    ub = [bounds_dict['x0'][1], bounds_dict['y0'][1], ]
+
+    param_init = []
+    param_init.append(init_dict['x0'] )
+    param_init.append(init_dict['y0'])
+    
+    if fitter_class.q_profile:
+        [ param_init.append(x) for x in init_dict['q'] ]
+        [ lb.append(x[0]) for x in bounds_dict['q'] ]
+        [ ub.append(x[1]) for x in bounds_dict['q'] ]
+    else:
+        param_init.append(init_dict['q'])
+        lb.append(bounds_dict['q'][0])
+        ub.append(bounds_dict['q'][1])
+
+    
+    if fitter_class.phi_profile:
+        [ param_init.append(x) for x in init_dict['phi'] ]
+        [ lb.append(x[0]) for x in bounds_dict['phi'] ]
+        [ ub.append(x[1]) for x in bounds_dict['phi'] ]
+    else:
+        param_init.append( init_dict['phi'] )
+        lb.append(bounds_dict['phi'][0])
+        ub.append(bounds_dict['phi'][1])
+
+
+    for i in range(fitter_class.Ndof_gauss):
+        param_init.append(init_dict['a%i'%i])
+        lb.append( bounds_dict['a%i'%i][0] )
+        ub.append(bounds_dict['a%i'%i][1] )
+
+    for i in range(fitter_class.Ndof_sky):
+        param_init.append( init_dict['sky%i'%i] )
+        lb.append(bounds_dict['sky%i'%i][0] )
+        ub.append(bounds_dict['sky%i'%i][1] )
+
+    lb = np.asarray(lb)
+    ub = np.asarray(ub)
+    param_init = np.asarray(param_init)
+
+    return bounds_dict, init_dict, lb,ub,param_init 

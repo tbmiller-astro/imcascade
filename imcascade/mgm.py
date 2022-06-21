@@ -1,9 +1,312 @@
+from asdf import ValidationError
 import numpy as np
 from scipy.special import erf
 from scipy.ndimage import rotate,shift
 from numba import njit
+import jax.numpy as jnp
+from abc import ABC, abstractmethod
+import theano.tensor as tt
 
-class MultiGaussModel():
+class BaseMultiGaussModel(ABC):
+    
+    def __init__(self, shape, sig, psf_sig, psf_a, verbose = True, \
+      sky_model = True,sky_type = 'tilted-plane', log_weight_scale = True, \
+      psf_shape = None, q_profile = False, phi_profile = False):
+        """ Initialize a MultiGaussModel instance"""
+        if psf_sig is not None or psf_a is not None:
+            self.psf_sig = psf_sig
+            self.psf_var = psf_sig*psf_sig
+            self.psf_a = psf_a
+
+
+            self.has_psf = True
+        else:
+            self.has_psf = False
+
+        self.psf_shape = psf_shape
+        self.shape = shape
+        self.log_weight_scale = log_weight_scale
+
+        self.x_mid = shape[0]/2.
+        self.y_mid = shape[1]/2.
+
+        self.x_pix = np.arange(0,shape[0])
+        self.y_pix = np.arange(0,shape[1])
+
+        X,Y = np.meshgrid(self.x_pix,self.y_pix, indexing = 'ij')
+        self.X = X
+        self.Y = Y
+
+        self.sig = sig
+        self.var = sig*sig
+
+        self.sky_model = sky_model
+        self.sky_type = sky_type
+        if sky_model:
+            if sky_type == 'flat':
+                self.Ndof_sky = 1
+                self.get_sky_model = self.get_sky_model_flat
+
+            elif sky_type == 'tilted-plane':
+                self.Ndof_sky = 3
+                self.get_sky_model = self.get_sky_model_tp
+        else:
+            self.Ndof_sky = 0
+
+        self.Ndof_gauss = len(self.sig)
+
+        self.q_profile = q_profile
+        self.phi_profile = phi_profile
+
+        if q_profile == False:
+            self.Ndof_q = 1
+        else:
+            self.Ndof_q = 5
+
+        
+        if phi_profile == False:
+            self.Ndof_phi = 1
+        else:
+            self.Ndof_phi = 5
+        
+        self.Ndof_struct = 2 + self.Ndof_q + self.Ndof_phi
+
+        self.Ndof = self.Ndof_struct + self.Ndof_gauss + self.Ndof_sky
+
+    def get_sky_model_flat(self,args):
+        """ Function used to calculate flat sky model
+
+        Parameters
+                    ----------
+        args: (a,) (float,float,float)
+
+        Returns
+        -------
+        sky_model: 2D Array
+            Model for sky background based on given parameters, same shape as 'shape'
+"""
+        a = args[0]
+
+        return a
+            
+    def get_sky_model_tp(self,args):
+        """ Function used to calculate tilted-plane sky model
+
+        Parameters
+        ----------
+        args: (a,b,c) (float,float,float)
+        a - overall normalization
+        b - slope in x direction
+        c - slope in y direction
+
+        Returns
+        -------
+        sky_model: 2D Array
+            Model for sky background based on given parameters, same shape as 'shape'
+"""
+        a,b,c = args
+
+        return a + (self.X - self.x_mid)*b + (self.Y - self.y_mid)*c
+
+    @abstractmethod
+    def make_model(self,param):
+        pass          
+
+
+class V2MGM(BaseMultiGaussModel):
+    """A class used to generate models based series of Gaussians
+
+    Parameters
+    ----------
+    shape: 2x1 array_like
+        Size of model image to generate
+    sig: 1-D array
+        Widths of Gaussians used to genrate model
+    psf_sig: 1-D array, None
+        Width of Gaussians used to approximate psf
+    psf_a: 1-D array, None
+        Weights of Gaussians used to approximate psf, must be same length
+        as 'psf_sig'. If both psf_sig and psf_a are None then will run in
+        Non-psf mode
+    verbose: bool, optional
+        If true will print out errors
+    sky_model: bool, optional
+        If True will incorperate a tilted plane sky model
+    log_weight_scale: bool, optional
+        Wether to treat weights as log scale, Default True
+"""
+
+    def __init__(self, shape, sig, psf_sig, psf_a, verbose = True, \
+      sky_model = True,sky_type = 'tilted-plane', log_weight_scale = True, \
+      psf_shape = None,q_profile = False, phi_profile = False):
+
+        """ Initialize a MultiGaussModel instance"""
+        super().__init__(shape, sig, psf_sig, psf_a, verbose, sky_model,sky_type,log_weight_scale, psf_shape, q_profile,phi_profile)
+        
+        self.sub_render_cut = 4
+        self.sub_render_size = 20
+        self.bin_fac = 3
+        
+        self.sub_cen_shift = ( int((self.shape[0]- self.sub_render_size ) /2), int( (self.shape[1]- self.sub_render_size )/2 ) )
+        self.sub_mid = int(self.sub_render_size*self.bin_fac/2)
+
+        x_sub = jnp.arange(self.sub_render_size*self.bin_fac)
+        y_sub = jnp.arange(self.sub_render_size*self.bin_fac)
+        self.X_sub,self.Y_sub = jnp.meshgrid(x_sub,y_sub, indexing = 'ij')
+        
+        self.X = jnp.array(self.X)
+        self.Y = jnp.array(self.Y)
+        
+        if self.has_psf:
+            var = (self.var + self.psf_var[:,None]).ravel()
+        else:
+            var = self.var
+        
+        self.Nrender = len(var)
+        self.w_subrender = jnp.where( jnp.sqrt(var) <= self.sub_render_cut )
+        self.w_no_sub = jnp.where( jnp.sqrt(var) > self.sub_render_cut )
+
+
+    def q_prof(self, q_params):
+        raise NotImplementedError
+    
+    def phi_prof(self, phi_params):
+        raise NotImplementedError
+
+    def parse_struct_params(self, param, calc = jnp):
+        x0,y0 = param[0],param[1]
+        
+        if calc is jnp:
+            arr_func = jnp.array
+        else:
+            arr_func = tt.as_tensor_variable
+        
+        if self.q_profile == False:
+            q_in = arr_func([param[2]]*self.Nrender ) 
+        else:
+            q_in = self.q_prof(param[2:2+self.Ndof_q],calc = calc)
+        
+        if self.phi_profile == False:
+            phi_in = arr_func([param[2+self.Ndof_q]]*self.Nrender ) 
+        
+        else:
+            phi_in = self.phi_prof(param[2+self.Ndof_q:2+self.Ndof_q:2+self.Ndof_q+self.Ndof_phi ],calc = calc)
+        
+        return x0,y0,q_in, phi_in
+
+    def get_comp_params(self, param, calc = jnp):
+        """Function to generate the properties of each component based on the given parameters
+
+        Parameters
+        ----------
+            param: array
+                 1-D array containing all the Parameters   
+
+        Returns:
+            x0,y0,final_q,final_phi,final_a,final_var : arrays
+                Arrays containing the properties needed to render each individual Gaussian Component
+
+        """
+        x0,y0,q,phi = self.parse_struct_params(param, calc = calc)
+
+
+        if self.log_weight_scale:
+            a_in = 10**param[self.Ndof_struct:self.Ndof_struct+self.Ndof_gauss]
+        else:
+            a_in = param[self.Ndof_struct:self.Ndof_struct+self.Ndof_gauss]
+
+        if not self.has_psf:
+            final_var = jnp.copy(self.var)
+            final_q = q
+            final_a = a_in
+            final_phi = phi
+
+        else:
+            if self.psf_shape == None:
+                final_var = (self.var + self.psf_var[:,None]).ravel()
+                final_q = calc.sqrt( (self.var*q*q+ self.psf_var[:,None]).ravel() / (final_var) )
+                final_a = (a_in*self.psf_a[:,None]).ravel()
+                final_phi = phi
+            else:
+                print ('PSF shape not yet supported in V2')
+                raise ValidationError
+        
+        return x0,y0,final_q,final_phi,final_a,final_var
+    
+    def make_model(self, param,calc = jnp):
+        xc,yc,q,phi,a,var = self.get_comp_params(param, calc = calc)
+        if calc is jnp:
+            ind_sub = self.w_subrender
+            ind_no_sub = self. w_no_sub
+        else:
+            ind_sub = self.w_subrender[0].tolist()
+            ind_no_sub = self.w_no_sub[0].tolist()
+
+        ans_sub = self.make_sub_model(
+            self.sub_mid + 1 + (xc - self.x_mid)*self.bin_fac, #Need extra 1 or centers or offset by 1/3 pixel not 100% sure why but this solves the issue
+            self.sub_mid + 1 + (yc - self.y_mid)*self.bin_fac, 
+            q[ind_sub],
+            phi[ind_sub], 
+            a[ind_sub],
+            var[self.w_subrender]*self.bin_fac**2, 
+            grid = jnp.array([self.X_sub, self.Y_sub] ),
+            calc = calc
+
+        )
+        
+
+        ans = self.make_sub_model(
+            xc,
+            yc,
+            q[ind_no_sub],
+            phi[ind_no_sub],
+            a[ind_no_sub],
+            var[self.w_no_sub],
+            calc = calc 
+        )
+        
+
+        if calc is jnp:
+            ans = ans.at[self.sub_cen_shift[0]:-self.sub_cen_shift[0],self.sub_cen_shift[1]:-self.sub_cen_shift[1]].add(
+            ans_sub.reshape(self.sub_render_size,self.bin_fac,self.sub_render_size, self.bin_fac ).sum(axis = [1,3])
+            )
+        else:
+            ans = tt.inc_subtensor(ans[self.sub_cen_shift[0]:-self.sub_cen_shift[0],self.sub_cen_shift[1]:-self.sub_cen_shift[1]],
+            ans_sub.reshape((self.sub_render_size,self.bin_fac,self.sub_render_size, self.bin_fac,), ndim = 4 ).sum(axis = [1,3])
+            )
+    
+
+        if not self.sky_model:
+            return ans
+        else:
+            return ans + self.get_sky_model(param[-self.Ndof_sky:])
+    
+    def make_sub_model(self,xc,yc,q,phi,a,var, calc = jnp,grid = None):
+        
+        if grid is None:
+            grid = [self.X,self.Y]
+        
+        if calc is jnp:
+            ax_var = jnp.newaxis
+        else:
+            ax_var  = None
+
+        X_use = calc.stack([grid[0]]*len(var))
+        Y_use = calc.stack([grid[1]]*len(var))
+        xp = (X_use-xc)*calc.cos(phi)[:,ax_var,ax_var] + (Y_use-yc)*calc.sin(phi)[:,ax_var,ax_var]
+
+        yp = -1*(X_use-xc)*calc.sin(phi[:,ax_var,ax_var]) + (Y_use-yc)*calc.cos(phi[:,ax_var,ax_var])
+        
+        r_sq = xp**2 + (yp/q[:,ax_var,ax_var])**2
+            
+        mod_3d = (a/(2*3.1415*var*q))[:,ax_var,ax_var] *calc.exp(-r_sq/(2*var[:,ax_var,ax_var]) )
+        mod_2d = mod_3d.sum(axis = 0)
+        
+        return mod_2d
+
+
+
+class MultiGaussModel(BaseMultiGaussModel):
     """A class used to generate models based series of Gaussians
 
     Parameters
@@ -33,62 +336,22 @@ class MultiGaussModel():
         Wether to treat weights as log scale, Default True
 """
 
-    def __init__(self, shape, sig, psf_sig, psf_a, verbose = True, \
-      sky_model = True,sky_type = 'tilted-plane', render_mode = 'hybrid', log_weight_scale = True, \
-      psf_shape = None):
+    def __init__(self, shape, sig, psf_sig, psf_a, verbose = True, sky_model = True,sky_type = 'tilted-plane', render_mode = 'hybrid', log_weight_scale = True, psf_shape = None):
         """ Initialize a MultiGaussModel instance"""
-        if psf_sig is not None or psf_a is not None:
-            self.psf_sig = psf_sig
-            self.psf_var = psf_sig*psf_sig
-            self.psf_a = psf_a
+        super().__init__(shape, sig, psf_sig, psf_a, verbose, sky_model, sky_type, log_weight_scale, psf_shape)
 
-
-            self.has_psf = True
-        else:
-            self.has_psf = False
-
-        self.psf_shape = psf_shape
-        self.shape = shape
+        #Define Render mode
         self.render_mode = render_mode
-        self.log_weight_scale = log_weight_scale
-
-        self.x_mid = shape[0]/2.
-        self.y_mid = shape[1]/2.
-
-        x_pix = np.arange(0,shape[0])
-        y_pix = np.arange(0,shape[1])
-        X,Y = np.meshgrid(x_pix,y_pix, indexing = 'ij')
-        self.X = X
-        self.Y = Y
 
         #Get larger grid for enlarged erf_stack calculation
-        x_pix_lg = np.arange(0,int(shape[0]*1.41)+2 )
-        y_pix_lg = np.arange(0,int(shape[1]*1.41)+2 )
+        x_pix_lg = np.arange(0,int(self.shape[0]*1.41)+2 )
+        y_pix_lg = np.arange(0,int(self.shape[1]*1.41)+2 )
         X_lg,Y_lg = np.meshgrid(x_pix_lg,y_pix_lg, indexing = 'ij')
-        self._lg_fac_x = int( (x_pix_lg[-1] - x_pix[-1])/2.)
-        self._lg_fac_y = int( (y_pix_lg[-1] - y_pix[-1])/2.)
+        self._lg_fac_x = int( (x_pix_lg[-1] - self.x_pix[-1])/2.)
+        self._lg_fac_y = int( (y_pix_lg[-1] - self.y_pix[-1])/2.)
         self.X_lg = X_lg
         self.Y_lg = Y_lg
 
-        self.sig = sig
-        self.var = sig*sig
-
-        self.sky_model = sky_model
-        self.sky_type = sky_type
-        if sky_model:
-            if sky_type == 'flat':
-                self.Ndof_sky = 1
-                self.get_sky_model = self.get_sky_model_flat
-
-            elif sky_type == 'tilted-plane':
-                self.Ndof_sky = 3
-                self.get_sky_model = self.get_sky_model_tp
-        else:
-            self.Ndof_sky = 0
-
-        self.Ndof_gauss = len(self.sig)
-
-        self.Ndof = 4 + self.Ndof_gauss + self.Ndof_sky
 
     def get_gauss_stack(self, x0,y0, q_arr, a_arr,var_arr):
         """ Function used to calculate render model using the 'Gauss' method
@@ -173,20 +436,19 @@ class MultiGaussModel():
 
         return _get_hybrid_stack(x0, y0,final_q, final_a, final_var, im_args)
 
-    def make_model(self,param,return_stack = False):
-        """ Function to generate model image based on given paramters array.
-        This version assumaes the gaussian weights are given in linear scale
+    def get_comp_params(self, param):
+        """Function to generate the properties of each component based on the given parameters
 
         Parameters
         ----------
-        param: array
-            1-D array containing all the Parameters
+            param: array
+                 1-D array containing all the Parameters   
 
-        Returns
-        -------
-        model_image: 2D Array
-            Generated model image as the sum of all components plus sky, if included
-"""
+        Returns:
+            x0,y0,final_q,final_phi,final_a,final_var : arrays
+                Arrays containing the properties needed to render each individual Gaussian Component
+
+        """
         x0= param[0]
         y0 = param[1]
         q_in = param[2]
@@ -213,6 +475,24 @@ class MultiGaussModel():
             else:
                 final_var, final_phi, final_q = get_ellip_conv_params(self.var, q_in, phi, self.psf_var,self.psf_shape['q'],self.psf_shape['phi'])
                 final_a = (a_in*self.psf_a[:,None]).ravel()
+        return x0,y0,final_q,final_phi,final_a,final_var
+
+    def make_model(self,param,return_stack = False):
+        """ Function to generate model image based on given paramters array.
+        This version assumaes the gaussian weights are given in linear scale
+
+        Parameters
+        ----------
+        param: array
+            1-D array containing all the Parameters
+
+        Returns
+        -------
+        model_image: 2D Array
+            Generated model image as the sum of all components plus sky, if included
+
+"""
+        x0,y0,final_q,final_phi,final_a,final_var = self.get_comp_params(param)
 
         ## Render unrotated stack of components
         if self.render_mode == 'hybrid':
