@@ -1,9 +1,10 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import asdf
 from scipy.optimize import root_scalar
 
-import imcascade
-from imcascade.utils import get_med_errors
+from imcascade.fitter import fitter_from_ASDF,Fitter
+from imcascade.utils import get_med_errors,vars_to_use
 
 
 def calc_flux_input(weights,sig, cutoff = None):
@@ -15,9 +16,6 @@ def calc_flux_input(weights,sig, cutoff = None):
 def r_root_func(r,f_L, weights,sig,cutoff):
     return f_L - np.sum(weights*(1. - np.exp(-1.*r**2 / (2*sig**2)) ),axis = -1 ) / calc_flux_input(weights,sig,cutoff = cutoff)
 
-vars_to_use = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss',
- 'has_psf', 'psf_a','psf_sig','psf_shape','log_weight_scale','min_param','sky_model',
- 'posterior', 'post_method','log_file', 'logz','logz_err']
 
 class ImcascadeResults():
     """A class used for collating imcascade results and performing analysis
@@ -41,7 +39,7 @@ class ImcascadeResults():
     def __init__(self, Obj, thin_posterior = 1):
         """Initialize a Task instance
 """
-        if type(Obj) == imcascade.fitter.Fitter:
+        if type(Obj) == Fitter:
             self.obj_type = 'class'
             dict_obj = vars(Obj)
         if type(Obj) == dict:
@@ -651,6 +649,96 @@ class ImcascadeResults():
         r_target += (P_ratio - I_0)*(P_ratio - I_1)/(I_2 - I_0)/(I_2 - I_1)*r_2
 
         return r_target
+    
+    def make_diagnostic_fig(self):
+        """Function which generates a diagnostic figure to assess fit
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        fig:  matplotlib figure
+            matplotlib figure object
+"""
+        if self.obj_type == 'dict':
+            print ('Cannot make diagnostic figure with dict as an input, please use a fitter class or an asdf file')
+        elif self.obj_type == 'class':
+            fitter = self.input 
+        elif self.obj_type == 'file':
+            fitter = fitter_from_ASDF(self.input)
+        
+        fig,((ax1,ax2,ax3,ax4),(ax5,ax6,ax7,ax8) ) = plt.subplots(2,4, figsize = (13,6.5))
+
+        param_no_sky = np.copy(self.min_param)
+        if fitter.sky_model:
+            param_no_sky[-3:] = 0
+            best_fit_sky = fitter.get_sky_model(self.min_param[-3:])
+        else:
+            best_fit_sky == np.zeros(shape= fitter.img.shape)
+        img = np.ma.masked_array(fitter.img, mask = fitter.mask)
+        best_fit_mod = fitter.make_model(param_no_sky)
+
+        resid = img - best_fit_mod - best_fit_sky
+
+        vlo,vhi = np.percentile(np.arcsinh(img.flatten()), [30,99]) 
+
+        ax1.set_title('Image')
+        ax1.imshow(np.arcsinh(img), vmin = vlo,vmax = vhi, cmap = 'cividis')
+        ax1.axis('off')
+
+        ax2.set_title('Best Fit Obs. Galaxy Model')
+        ax2.imshow(np.arcsinh(best_fit_mod), vmin = vlo,vmax = vhi, cmap = 'cividis')
+        ax2.axis('off')
+
+        ax3.set_title('Best Fit Sky Model')
+        ax3.imshow(np.arcsinh(best_fit_sky), vmin = vlo,vmax = vhi, cmap = 'cividis')
+        ax3.axis('off')
+
+        resid_std = np.std(resid)
+        ax4.set_title('Residuals')
+        ax4.imshow(np.arcsinh(resid),cmap = 'twilight', vmin = np.arcsinh(-3.5*resid_std), vmax = np.arcsinh(3.5*resid_std))
+        ax4.axis('off')
+
+        rplot = np.linspace(0, fitter.sig[-1]*1.2, num = 50)
+        sbp_ind = self.calc_sbp(rplot, return_ind = True)
+        sbp_tot = sbp_ind.sum(axis = -1)
+        cog = self.calc_cog(rplot)
+        rms_med = np.median(1./np.sqrt(fitter.weight) )
+        abs_sky_med = np.median(np.abs(best_fit_sky))
+
+        if len(sbp_tot.shape) > 1:
+            sbp_tot = sbp_tot.mean(axis = 1)
+            cog = cog.mean(axis = 1)
+            sbp_ind = sbp_ind.mean(axis = 1)
+
+        ax5.plot(rplot,sbp_tot, 'k-', lw = 2)
+        ax5.plot(rplot,sbp_ind, 'r--')
+        ax5.plot([rplot[0],rplot[-1]], [rms_med,rms_med], 'C0:', lw = 3, label = 'Med. RMS/pix')
+        ax5.plot([rplot[0],rplot[-1]], [abs_sky_med,abs_sky_med], 'C1:', lw = 3, label = 'Med. |Sky Model|')
+
+        ax5.set_yscale('log')
+        ax5.set_ylim(sbp_tot[-1] *0.4,sbp_tot[0]*1.4)
+        ax5.set_xlabel('radius (pixels)')
+        ax5.set_title('Intr. SBP')
+        ax5.legend(frameon = False)
+
+        ax6.plot(rplot, cog,'k-', lw = 2)
+        #ax6.set_yscale('log')
+        ax6.set_xlabel('radius (pixels)')
+        ax6.set_title('Intr. Curve-of-growth')
+
+        ax7.axis ('off')
+        ax8.axis('off')
+
+        ax7_str = f'Flux = {self.calc_flux():.2f} \nr_eff = {self.calc_r50():.2f} pixels\nq = {self.q:.2f}\nPA ={self.pa:.2f} rad'
+        ax7.text(0.01,0.99,ax7_str, transform = ax7.transAxes, fontsize = 16, ha = 'left', va= 'top')
+
+        ax8_str = f'# of components = {fitter.Ndof_gauss:d}\nPSF? - {fitter.has_psf}\nSky? - {fitter.sky_model}'
+        ax8.text(0.01,0.99,ax8_str, transform = ax8.transAxes, fontsize = 16, ha = 'left', va= 'top')
+        fig.subplots_adjust(wspace = 0.2)
+        
+        return fig
 
 class MultiResults():
     ''' A Class to analyze and combine multiple ImcascadeResults classes using evidence weighting'''

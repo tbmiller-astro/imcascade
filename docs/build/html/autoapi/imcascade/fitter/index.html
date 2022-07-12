@@ -558,22 +558,45 @@ containg x0, y0, PA and q, are all the same and equal to values used to pre-rend
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="imcascade.fitter.Fitter.save_results">
-<span class="sig-name descname"><span class="pre">save_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_basic_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thin_posterior</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zpt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errp_lo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">errp_hi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">84</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.save_results" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function to save results after run_ls_min, run_dynesty and/or run_emcee is performed. Will be saved as an ASDF file.</p>
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.run_zeus">
+<span class="sig-name descname"><span class="pre">run_zeus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'express'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'min_results'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsteps_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">int(100000.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">burnin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.run_zeus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to run zeus to sample the posterior distribution using either the
+‘full’ methods which explores all paramters, or the ‘express’ method which sets
+the structural parameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>file_name</strong> (<em>str</em>) – Str defining location of where to save data</p></li>
-<li><p><strong>run_basic_analysis</strong> (<em>Bool</em><em> (</em><em>default True</em><em>)</em>) – If true will run ImcascadeResults.run_basic_analysis</p></li>
+<li><p><strong>method</strong> (<em>str: 'full'</em><em> or </em><em>'express'</em>) – Which method to use to run dynesty</p></li>
+<li><p><strong>prior</strong> (<em>'min_results'</em><em> or </em><em>'uniform'</em>) – Which of the two choices of priors to use. The <cite>min_results</cite> priors are Gaussian,
+with centers defined by the best fit paramters and variance equal to 4 times
+the variance estimated using the Hessian matrix from the run_ls_min() run.
+<cite>uniform</cite> is what it sounds like, uniform priors based on the the lower and upper bounds
+Defualt is <cite>min_results</cite></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><strong>Posterior</strong> – posterior distribution derrived. If method is ‘express’, the first 4 columns,
-containg x0,y0,PA and q, are all the same and equal to values used to pre-rended the images</p>
+containg x0, y0, PA and q, are all the same and equal to values used to pre-render the images</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.fitter.Fitter.save_results">
+<span class="sig-name descname"><span class="pre">save_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.fitter.Fitter.save_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to save results after run_ls_min, run_dynesty and/or run_emcee is performed. Will be saved as an ASDF file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>file_name</strong> (<em>str</em>) – Str defining location of where to save data</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>dict_saved</strong> – Dictionary containing all the save quantities</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>

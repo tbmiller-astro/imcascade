@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.special import erf
 from scipy.ndimage import rotate,shift
+from scipy.ndimage import map_coordinates
 from numba import njit
 
 class MultiGaussModel():
@@ -142,8 +143,8 @@ class MultiGaussModel():
 """
         X_use = self.X_lg[:,:,None] - (x0 + self._lg_fac_x)
         Y_use = self.Y_lg[:,:,None] - (y0 + self._lg_fac_y)
-        c_x = 1./(np.sqrt(2*final_var))
-        c_y = 1./(np.sqrt(2*final_var)*final_q)
+        c_x = 1./(np.sqrt(2.*final_var))
+        c_y = 1./(np.sqrt(2.*final_var)*final_q)
 
         unrotated_stack = final_a/4.*( ( erf(c_x*(X_use-0.5)) - erf(c_x*(X_use+0.5)) )* ( erf(c_y*(Y_use-0.5)) - erf(c_y*(Y_use+0.5)) ) )
         return unrotated_stack
@@ -254,16 +255,16 @@ class MultiGaussModel():
 
         Parameters
                     ----------
-        args: (a,) (float,float,float)
+        args: (a,) (float,)
 
         Returns
         -------
         sky_model: 2D Array
             Model for sky background based on given parameters, same shape as 'shape'
 """
-        a = args[0]
+        
 
-        return a
+        return args[0]
             
     def get_sky_model_tp(self,args):
         """ Function used to calculate tilted-plane sky model
@@ -280,9 +281,19 @@ class MultiGaussModel():
         sky_model: 2D Array
             Model for sky background based on given parameters, same shape as 'shape'
 """
-        a,b,c = args
 
-        return a + (self.X - self.x_mid)*b + (self.Y - self.y_mid)*c
+        return args[0] + (self.X - self.x_mid)*args[1] + (self.Y - self.y_mid)*args[2]
+
+def rot_im_jax_exp(img,phi,x0,y0):
+    """Experimental, do not use yet!"""
+    x = np.arange(img.shape[0])
+    y = np.arange(img.shape[1])
+    X,Y = np.meshgrid(x,y)
+
+    X_rot = (X - x0)*np.cos(phi) + (Y - y0)*np.sin(phi) + x0
+    Y_rot = -1*(X - x0)*np.sin(phi) + (Y - y0)*np.cos(phi) + y0
+    locs = np.stack([Y_rot,X_rot])
+    return map_coordinates(img,locs, order = 1 )
 
 def rot_im(img,phi,x0,y0):
     """Function to rotate image around a given point

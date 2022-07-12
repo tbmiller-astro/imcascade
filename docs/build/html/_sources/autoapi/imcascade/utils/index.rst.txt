@@ -25,6 +25,19 @@ Functions
 
 
 
+Attributes
+~~~~~~~~~~
+
+.. autoapisummary::
+
+   imcascade.utils.vars_to_use
+
+
+.. data:: vars_to_use
+   :annotation: = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss', 'has_psf', 'psf_a',...
+
+   
+
 .. function:: guess_weights(sig, re, flux)
 
    Method to guess the weights of gaussian componenets given an re and flux.

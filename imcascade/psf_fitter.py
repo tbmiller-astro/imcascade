@@ -2,6 +2,7 @@ import numpy as np
 from astropy.io import fits
 import sep
 from scipy.optimize import least_squares
+from scipy.interpolate import interp1d
 from imcascade.fitter import Fitter
 from imcascade.utils import min_diff_array
 
@@ -191,12 +192,12 @@ radii: 1D array
             ax1.legend(fontsize = 12, frameon = False)
 
             mod = fitter_cur.make_model(param)
-            resid = (self.psf_data - mod)/mod
+            resid = (self.psf_data - mod)
 
-            im2 = ax2.imshow(resid, vmin = -0.5, vmax = 0.5, cmap = 'RdGy')
+            im2 = ax2.imshow(resid, vmin = -0.01, vmax = 0.01, cmap = 'RdGy')
             ax2.axis('off')
 
-            ax2.set_title('Residual: (data-model)/model')
+            ax2.set_title('Residual: (data-model)')
 
             fig.colorbar(im2, cax=cax, orientation='vertical',fraction=0.046, pad=0.04)
             fig.subplots_adjust(wspace = 0.01)
@@ -289,3 +290,13 @@ radii: 1D array
             return sig_min / self.oversamp, a_min / np.sum(a_min)
         else:
             return sig_min / self.oversamp, a_min / self.oversamp**2
+    
+    def calc_fwhm(self):
+        """ Function to estimate the FHWM of the PSF, by interpolating the measured profile
+
+    Returns
+    -------
+    FWHM: float
+        Estimate of the FWHM in pixels
+    """  
+        return interp1d(self.intens,self.radius, kind = 'quadratic')( self.intens[0]/2. )*2

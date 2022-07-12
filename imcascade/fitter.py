@@ -1,14 +1,17 @@
+from asyncio.log import logger
+from cmath import log
+import importlib
 import numpy as np
 import asdf
 import logging
-from scipy.optimize import least_squares
-from scipy.stats import norm, truncnorm
+from scipy.optimize import least_squares,minimize,Bounds
+from scipy.stats import norm, truncnorm,cauchy
 
 from imcascade.mgm import MultiGaussModel
-from imcascade.results import ImcascadeResults,vars_to_use
-from imcascade.utils import dict_add, guess_weights,log_scale,expand_mask
+from imcascade.utils import dict_add, guess_weights,log_scale,expand_mask,vars_to_use
 from astropy.stats.biweight import biweight_location as bwl
 from astropy.stats.biweight import biweight_scale as bws
+from astropy.io import fits
 
 import dynesty
 from dynesty import utils as dyfunc
@@ -16,7 +19,8 @@ from dynesty import utils as dyfunc
 log2pi = np.log(2.*np.pi)
 
 def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re = None, flux = None,
- psf_oversamp = 1, sky_model = True, log_file = None, readnoise = None, gain = None, exp_time = None):
+ psf_oversamp = 1, sky_model = True, log_file = None, readnoise = None, gain = None, exp_time = None, num_components = None,
+ log_weight_scale = True):
     """Function used to help Initialize Fitter instance from simple inputs
 
     Parameters
@@ -97,12 +101,7 @@ def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re 
         logger.info("Widths: "+ ','.join(map(str,np.round(psf_sig,2))) )
         logger.info("Fluxes: "+ ','.join(map(str,np.round(psf_a,2))))
 
-        #Calculate hwhm
-        psf_mp = np.ones(4+len(psf_sig))
-        psf_mp[4:] = psf_a
-        rdict = {'sig':psf_sig, 'Ndof':4+len(psf_sig), 'Ndof_gauss':len(psf_sig), 'Ndof_sky':0, 'log_weight_scale':False,'min_param':psf_mp, 'sky_model':False}
-        psf_res = ImcascadeResults(rdict)
-        psf_hwhm = psf_res.calc_iso_r(psf_res.calc_sbp(np.array([0,]))/2)
+        psf_hwhm = pfitter.calc_fwhm()/2.
 
         if psf_hwhm > 1:
             sig_min = psf_hwhm*0.5
@@ -110,7 +109,7 @@ def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re 
             sig_min = 0.5
     else:
         sig_min = 0.75
-
+    
     #Load image data
     if type(im) == str:
         im_fits = fits.open(im)
@@ -141,10 +140,14 @@ def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re 
     init_dict = {'re':a_guess, 'flux':fl_guess, 'sky0':bkg.globalback, 'x0':x0, 'y0':y0}
 
     #Calculate widths of components
-    if im_data.shape[0] > 100:
-        num_sig = 9
+    
+    if num_components is None:
+        if im_data.shape[0] > 100:
+            num_sig = 9
+        else:
+            num_sig = 7
     else:
-        num_sig = 7
+        num_sig = num_components
     sig_use = log_scale(sig_min,sig_max, num_sig)
     logger.info("Using %i components with logarithmically spaced widths to fit galaxy"%num_sig)
     logger.info(", ".join(map(str,np.round(sig_use,2))))
@@ -172,7 +175,7 @@ def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re 
         pix_weights = 1./bkg.rms()**2
 
     #Initalize Fitter
-    return Fitter(im_data,sig_use, psf_sig,psf_a, weight = pix_weights, mask = mask, init_dict = init_dict, sky_model = sky_model, log_file = log_file)
+    return Fitter(im_data,sig_use, psf_sig,psf_a, weight = pix_weights, mask = mask, init_dict = init_dict, sky_model = sky_model, log_file = log_file,log_weight_scale = log_weight_scale)
 
 
 def fitter_from_ASDF(file_name, init_dict= {}, bounds_dict = {}):
@@ -424,6 +427,7 @@ class Fitter(MultiGaussModel):
         self.lb = np.asarray(self.lb)
         self.ub = np.asarray(self.ub)
         self.bnds = (self.lb,self.ub)
+        self.init_dict = init_dict
 
     def resid_1d(self,params):
         """ Given a set of parameters returns the 1-D flattened residuals
@@ -463,7 +467,7 @@ class Fitter(MultiGaussModel):
         if self.verbose: self.logger.info('Running least squares minimization')
         min_res = least_squares(self.resid_1d, self.param_init, bounds = self.bnds, **ls_kwargs)
         self.min_res = min_res
-        self.min_param = min_res.x
+        self.min_param = self.min_res.x
         if self.verbose: self.logger.info('Finished least squares minimization')
 
         return self.min_param
@@ -540,6 +544,13 @@ class Fitter(MultiGaussModel):
             sig = sig*2.
             sig[sig>1] = 1.
             self._exp_pri_scales = sig.copy()
+        
+        self._lin_cauchy_locs = guess_weights(self.sig, self.init_dict['re'], self.init_dict['flux'])
+        self._lin_cauchy_scales = self._lin_cauchy_locs/3.
+        
+        if self.sky_model:
+            self._lin_cauchy_locs = np.append(self._lin_cauchy_locs, np.array([0,0,0]))
+            self._lin_cauchy_scales = np.append(self._lin_cauchy_scales, np.array([1e-3,1e-3,1e-3]))
         return stack
 
     def make_express_model(self, exp_params):
@@ -584,7 +595,7 @@ class Fitter(MultiGaussModel):
             Chi squared statistic for the given set of parameters
 """
         model = self.make_model(params)
-        return np.sum( (self.img - model)**2 *self.weight - self.log_weight + np.log(2*np.pi) )
+        return ( (self.img - model)**2 *self.weight - self.log_weight + np.log(2*np.pi) ).sum()
 
     def log_like(self,params):
         """Function to calculate the log likeliehood for a given set of paramters
@@ -665,6 +676,22 @@ class Fitter(MultiGaussModel):
             array containing distribution of parameters from prior
 """
         return norm.ppf(u, loc = self._exp_pri_locs, scale = self._exp_pri_scales)
+    
+    def ptform_exp_lin_cauchy(self, u):
+        """Prior transformation function to be used in dynesty 'express' mode using
+        gaussian priors defined by the results of the least_squares minimization
+
+        Parameters
+        ----------
+        u: array
+            array of random numbers from 0 to 1
+
+        Returns
+        -------
+        x: array
+            array containing distribution of parameters from prior
+"""
+        return cauchy.ppf(u, loc = self._lin_cauchy_locs, scale = self._lin_cauchy_scales)
 
     def ptform_exp_unif(self, u):
         """Prior transformation function to be used in dynesty 'express' mode using
@@ -714,20 +741,36 @@ class Fitter(MultiGaussModel):
             containg x0, y0, PA and q, are all the same and equal to values used to pre-render the images
 """
         if self.verbose: self.logger.info('Running dynesty using the %s method'%method)
+
+
         if method == 'full':
             ndim = self.Ndof
             sampler = dynesty.DynamicNestedSampler( self.log_like, self.ptform, ndim= ndim, **sampler_kwargs)
         if method == 'express':
+            jax_check = importlib.util.find_spec('jax')
+        
+            if jax_check is None:
+                log_like_use = self.log_like_exp
+            else:
+                logger.info("jax module found, importing and 'jit'-ing likelihood function")
+                from jax import jit,grad
+                log_like_use = jit(self.log_like_exp)
+                grad_log_like = grad(log_like_use)
+                sampler_kwargs.update({'gradient':grad_log_like, 'compute_jac':True})
             ndim = self.Ndof_gauss + self.Ndof_sky
             if not hasattr(self, 'express_gauss_arr'):
                 if self.verbose: self.logger.info('Setting up pre-rendered images')
                 _ = self.set_up_express_run()
             if prior == 'min_results':
-                sampler = dynesty.DynamicNestedSampler( self.log_like_exp, self.ptform_exp_ls, ndim= ndim, **sampler_kwargs)
+                sampler = dynesty.DynamicNestedSampler( log_like_use, self.ptform_exp_ls, ndim= ndim, **sampler_kwargs)
             elif prior == 'uniform':
-                sampler = dynesty.DynamicNestedSampler( self.log_like_exp, self.ptform_exp_unif, ndim= ndim, **sampler_kwargs)
+                sampler = dynesty.DynamicNestedSampler( log_like_use, self.ptform_exp_unif, ndim= ndim, **sampler_kwargs)
+            elif prior == 'cauchy':
+                self.log_weight_scale = False
+                sampler = dynesty.DynamicNestedSampler( log_like_use, self.ptform_exp_lin_cauchy, ndim= ndim, **sampler_kwargs)
             else:
-                raise ("Chosen prior must be either 'min_results' or 'uniform' ")
+                raise ("Chosen prior must be either 'min_results', 'uniform' or 'cauchy'")
+        
         sampler.run_nested(**run_nested_kwargs)
 
         if self.verbose: self.logger.info('Finished running dynesty, calculating posterior')
@@ -747,45 +790,28 @@ class Fitter(MultiGaussModel):
         self.post_method = 'dynesty-'+method
         return self.posterior
 
-
-    def save_results(self,file_name, run_basic_analysis = True, thin_posterior = 1, zpt = None, cutoff = None, errp_lo = 16, errp_hi =84):
+    def save_results(self,file_name):
         """Function to save results after run_ls_min, run_dynesty and/or run_emcee is performed. Will be saved as an ASDF file.
 
         Parameters
         ----------
         file_name: str
             Str defining location of where to save data
-        run_basic_analysis: Bool (default True)
-            If true will run ImcascadeResults.run_basic_analysis
-
         Returns
         -------
-        Posterior: Array
-            posterior distribution derrived. If method is 'express', the first 4 columns,
-            containg x0,y0,PA and q, are all the same and equal to values used to pre-rended the images
+        dict_saved: dict
+            Dictionary containing all the save quantities
 """
-        if run_basic_analysis:
-            if self.verbose: self.logger.info('Saving results to: %s'%file_name)
-            if self.verbose: self.logger.info('Running basic morphological analysis')
 
-            res = ImcascadeResults(self, thin_posterior = thin_posterior)
-            res_dict = res.run_basic_analysis(zpt = zpt, cutoff = cutoff, errp_lo = errp_lo, errp_hi =errp_hi,\
-              save_results = True , save_file = file_name)
-            if self.verbose:
-                for key in res_dict:
-                    self.logger.info('%s = '%(key) + str(res_dict[key]))
-            return res
-        else:
-            if self.verbose: self.logger.info('Saving results to: %s'%file_name)
-            #If analysis is not to be run then simply save the important contents of the class
-            dict_to_save = {}
-            for key in vars_to_use:
-                try:
-                    dict_to_save[key] = vars(self)[key]
-                except:
-                    continue
+        if self.verbose: self.logger.info('Saving results to: %s'%file_name)
+        #If analysis is not to be run then simply save the important contents of the class
+        dict_to_save = {}
+        for key in vars_to_use:
+            try:
+                dict_to_save[key] = vars(self)[key]
+            except:
+                continue
+        file = asdf.AsdfFile(dict_to_save)
+        file.write_to(file_name)
 
-            file = asdf.AsdfFile(dict_to_save)
-            file.write_to(file_name)
-
-            return dict_to_save
+        return dict_to_save

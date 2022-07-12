@@ -438,7 +438,7 @@ div.rendered_html tbody tr:hover {
 <div class="section" id="Quickstart-guide">
 <h1>Quickstart guide<a class="headerlink" href="#Quickstart-guide" title="Permalink to this headline">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">imcascade</span></code> is a method to fit sources in astronomical images. This is accomplished using the multi-Gaussian expansion method which models the galaxy as a mixture of Gaussians. For more details please read the in-depth example. What follows is a (very) brief introduction to the basic usage of <code class="docutils literal notranslate"><span class="pre">imcascade</span></code>.</p>
-<p>In this short example we will fit an analytic, circular, Sersic profile with <span class="math notranslate nohighlight">\(n = 1.5\)</span>, <span class="math notranslate nohighlight">\(r_e = 5\)</span> and total flux, <span class="math notranslate nohighlight">\(F = 200\)</span>, we have convolved the profile with a Moffat PSF with <span class="math notranslate nohighlight">\(\alpha = 3\)</span> and <span class="math notranslate nohighlight">\(\gamma = 3\)</span> and added purely Gaussian noise.</p>
+<p>In this short example we will fit an analytic, circular, Sersic profile with <span class="math notranslate nohighlight">\(n = 1.5\)</span>, <span class="math notranslate nohighlight">\(r_e = 6\)</span> and total flux, <span class="math notranslate nohighlight">\(F = 250\)</span>, we have convolved the profile with a Moffat PSF with <span class="math notranslate nohighlight">\(\alpha = 3\)</span> and <span class="math notranslate nohighlight">\(\gamma = 3\)</span> and added purely Gaussian noise.</p>
 <p>In a hidden cell I have intialized the cutout in the 2D array <code class="docutils literal notranslate"><span class="pre">sci</span></code> and the pixelized PSF saved in the 2D array <code class="docutils literal notranslate"><span class="pre">psf</span></code>. Below I show to 2D images of each</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
@@ -482,13 +482,13 @@ possibilities.</p>
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-2021-06-02 15:57:17,874 - Fit PSF with 4 components
-2021-06-02 15:57:17,877 - Widths: 1.2,1.81,5.28,2.93
-2021-06-02 15:57:17,879 - Fluxes: 0.27,0.51,0.03,0.19
-2021-06-02 15:57:17,911 - Using 9 components with logarithmically spaced widths to fit galaxy
-2021-06-02 15:57:17,913 - 0.87, 1.39, 2.22, 3.54, 5.64, 8.99, 14.34, 22.87, 36.47
-2021-06-02 15:57:17,915 - No mask was given, derriving one using sep
-2021-06-02 15:57:17,958 - Using sep rms map to calculate pixel weights
+2022-06-22 12:35:56,729 - Fit PSF with 4 components
+2022-06-22 12:35:56,730 - Widths: 1.2,1.81,5.28,2.93
+2022-06-22 12:35:56,731 - Fluxes: 0.27,0.51,0.03,0.19
+2022-06-22 12:35:56,739 - Using 9 components with logarithmically spaced widths to fit galaxy
+2022-06-22 12:35:56,740 - 0.91, 1.47, 2.37, 3.83, 6.18, 9.98, 16.11, 26.0, 41.97
+2022-06-22 12:35:56,741 - No mask was given, derriving one using sep
+2022-06-22 12:35:56,752 - Using sep rms map to calculate pixel weights
 </pre></div></div>
 </div>
 <p>This function uses the <code class="docutils literal notranslate"><span class="pre">psf_fitter</span></code> module to fit the given pixelized psf with a sum of Gaussians, which is required for our method. Next it estimates the effective radius and uses nine logarithmically spaced widths for the Gaussian components ranging from the PSF HWHM to <span class="math notranslate nohighlight">\(10\times r_e\)</span>. It then derrives pixel weights and masks using <a class="reference external" href="https://sep.readthedocs.io/en/v1.1.x/">sep</a> (or the gain,exposure time and readnoise to calculate the rms). There are also options to use pre-calculated
@@ -509,8 +509,8 @@ version of these if the user has them.</p>
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-2021-06-02 15:57:24,962 - Running least squares minimization
-2021-06-02 15:58:26,970 - Finished least squares minimization
+2022-06-22 12:35:56,761 - Running least squares minimization
+2022-06-22 12:36:12,278 - Finished least squares minimization
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -518,10 +518,10 @@ version of these if the user has them.</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[ 7.59877189e+01  7.49597048e+01  9.74259034e-01  1.51498459e+00
-  1.41344796e+00 -2.78423788e+00  1.30517731e+00  1.73765215e+00
-  1.69045057e+00  1.63997099e+00 -2.79204666e+00 -2.79219698e+00
- -2.79219756e+00 -8.77719934e-05  8.05490933e-06  5.59552332e-06]
+[ 7.61390477e+01  7.57781861e+01  9.85070958e-01  2.73850310e+00
+  1.35817850e+00 -2.65828249e+00  1.42078682e+00  1.77615829e+00
+  1.80416586e+00  1.83399769e+00 -2.69962343e+00 -2.69964033e+00
+  1.50071679e+00 -1.02134684e-03 -3.59455490e-04  2.94738166e-04]
 </pre></div></div>
 </div>
 <p>We have printed out the parameters the desribe the best fit model. The first four are the structural parameters (x position, y position, axis ratio and position angle) then the next nine represent the fluxes or weights of the nine components (in logarithmic space) and the final three parameters for the tilted-plane sky model.</p>
@@ -532,8 +532,8 @@ version of these if the user has them.</p>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">imcascade.results</span> <span class="kn">import</span> <span class="n">ImcascadeResults</span>
-<span class="n">res_ls</span> <span class="o">=</span> <span class="n">ImcascadeResults</span><span class="p">(</span><span class="n">fitter</span><span class="p">)</span>
-<span class="n">res_ls</span><span class="o">.</span><span class="n">run_basic_analysis</span><span class="p">()</span>
+<span class="n">res_class</span> <span class="o">=</span> <span class="n">ImcascadeResults</span><span class="p">(</span><span class="n">fitter</span><span class="p">)</span>
+<span class="n">res_class</span><span class="o">.</span><span class="n">run_basic_analysis</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -543,19 +543,37 @@ version of these if the user has them.</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-{&#39;flux&#39;: 193.44242062476053,
- &#39;r20&#39;: 1.8099911828165522,
- &#39;r50&#39;: 4.739854050401768,
- &#39;r80&#39;: 9.450997069887732,
- &#39;r90&#39;: 12.875583509177192,
- &#39;C80_20&#39;: 5.221570778693466,
- &#39;C90_50&#39;: 2.71645147134558}
+{&#39;flux&#39;: 272.50704919878336,
+ &#39;r20&#39;: 2.607030356515138,
+ &#39;r50&#39;: 6.598937386524236,
+ &#39;r80&#39;: 15.134041757719977,
+ &#39;r90&#39;: 27.310324691459698,
+ &#39;C80_20&#39;: 5.805088429407439,
+ &#39;C90_50&#39;: 4.138594305687825}
 </pre></div></div>
 </div>
-<p>We can see our fit matches the true profile pretty well!</p>
-<p>Next we will explore the Posterior distribution using Dynesty, and our method of pre-rendered images to help speed up the run time.</p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">.run_basic_analysis()</span></code> calculates some basic morphological quantities like the total flux and half-light radius. We can see that the best fit parameters match the inputs pretty well!</p>
+<p>Another very useful function is the <code class="docutils literal notranslate"><span class="pre">.make_diagnostic_fig()</span></code> this makes a figure which helps inspect the fit</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">res_class</span><span class="o">.</span><span class="n">make_diagnostic_fig</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/quickstart_11_0.png" src="_images/quickstart_11_0.png" />
+</div>
+</div>
+<p>This makes it easier to see if the fit went catastrophically wrong. This fit looks pretty good! Some examples of issues are if the curve-of-growth does not converge or if there are systematic issues in the residuals. To remedy this one could try using a different set of widths for the components, altering the inital guesses or making sure all the input data is correct.</p>
+<p>Next we will explore the Posterior distribution using Dynesty. Specifically we will use the ‘express’ method which uses pre-rendered images to help speed up the run time. The code also automatically checks to see if the package <code class="docutils literal notranslate"><span class="pre">jax</span></code> is installed. This additionally helps to speed up the computation if availible.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -563,44 +581,30 @@ version of these if the user has them.</p>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-2021-06-02 15:58:27,045 - Running dynesty using the express method
-2021-06-02 15:58:27,048 - Setting up pre-rendered images
-2021-06-02 15:58:27,051 - Parameters to be set for pre-rendered images:
-2021-06-02 15:58:27,052 -        Galaxy Center: 75.99,74.96
-2021-06-02 15:58:27,055 -        Axis Ratio: 0.97426
-2021-06-02 15:58:27,057 -        PA: 1.51498
-iter: 27551 | batch: 8 | bound: 313 | nc: 25 | ncall: 655299 | eff(%):  4.204 | loglstar: 35428.150 &lt; 35437.243 &lt; 35436.252 | logz: 35420.525 +/-  0.220 | stop:  0.918                               2021-06-02 16:26:13,866 - Finished running dynesty, calculating posterier
-</pre></div></div>
-</div>
-<p>Now if we run the analysis again, we will have slightly different central values and error as the 16th-84th percentile range of the posterior.</p>
+<p>Now if we re-initialize the results class, we can calculate uncertainties on the morphological values.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">res_dyn</span> <span class="o">=</span> <span class="n">ImcascadeResults</span><span class="p">(</span><span class="n">fitter</span><span class="p">)</span>
-<span class="n">res_dyn</span><span class="o">.</span><span class="n">run_basic_analysis</span><span class="p">()</span>
+<span></span><span class="n">res_class_w_post</span> <span class="o">=</span> <span class="n">ImcascadeResults</span><span class="p">(</span><span class="n">fitter</span><span class="p">)</span>
+<span class="n">res_class_w_post</span><span class="o">.</span><span class="n">run_basic_analysis</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-{&#39;flux&#39;: array([193.4481749 ,   2.11287567,   2.15796168]),
- &#39;r20&#39;: array([1.80815698, 0.03861177, 0.03768717]),
- &#39;r50&#39;: array([4.74502122, 0.06915568, 0.07058949]),
- &#39;r80&#39;: array([9.44350851, 0.19677958, 0.21464335]),
- &#39;r90&#39;: array([12.90316249,  0.4077762 ,  0.41033308]),
- &#39;C80_20&#39;: array([5.2253014 , 0.11777567, 0.12765788]),
- &#39;C90_50&#39;: array([2.71948448, 0.06136983, 0.06029801])}
+{&#39;flux&#39;: array([265.03123681,  13.10772956,  15.85149951]),
+ &#39;r20&#39;: array([2.53966638, 0.11896364, 0.1432883 ]),
+ &#39;r50&#39;: array([6.38103493, 0.37097889, 0.47476458]),
+ &#39;r80&#39;: array([14.0269171 ,  1.61037387,  2.57703404]),
+ &#39;r90&#39;: array([22.04165147,  4.62849536, 14.41791506]),
+ &#39;C80_20&#39;: array([5.52550046, 0.39607329, 0.66787074]),
+ &#39;C90_50&#39;: array([3.45270869, 0.55956601, 1.86892114])}
 </pre></div></div>
 </div>
 </div>

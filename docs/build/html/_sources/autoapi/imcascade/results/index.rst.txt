@@ -27,24 +27,11 @@ Functions
 
 
 
-Attributes
-~~~~~~~~~~
-
-.. autoapisummary::
-
-   imcascade.results.vars_to_use
-
-
 .. function:: calc_flux_input(weights, sig, cutoff=None)
 
 
 .. function:: r_root_func(r, f_L, weights, sig, cutoff)
 
-
-.. data:: vars_to_use
-   :annotation: = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss', 'has_psf', 'psf_a',...
-
-   
 
 .. class:: ImcascadeResults(Obj, thin_posterior=1)
 
@@ -286,6 +273,15 @@ Attributes
 
       :returns: **r_I** -- The radius, in pixel units, where the surface brightness profile matches I
       :rtype: float or Array
+
+
+   .. method:: make_diagnostic_fig(self)
+
+      Function which generates a diagnostic figure to assess fit
+
+
+      :returns: **fig** -- matplotlib figure object
+      :rtype: matplotlib figure
 
 
 

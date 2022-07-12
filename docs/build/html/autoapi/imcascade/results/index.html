@@ -222,20 +222,6 @@
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="attributes">
-<h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h3>
-<table class="longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#imcascade.results.vars_to_use" title="imcascade.results.vars_to_use"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vars_to_use</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-</tbody>
-</table>
 <dl class="py function">
 <dt class="sig sig-object py" id="imcascade.results.calc_flux_input">
 <span class="sig-prename descclassname"><span class="pre">imcascade.results.</span></span><span class="sig-name descname"><span class="pre">calc_flux_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.results.calc_flux_input" title="Permalink to this definition">¶</a></dt>
@@ -244,11 +230,6 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="imcascade.results.r_root_func">
 <span class="sig-prename descclassname"><span class="pre">imcascade.results.</span></span><span class="sig-name descname"><span class="pre">r_root_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.results.r_root_func" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py data">
-<dt class="sig sig-object py" id="imcascade.results.vars_to_use">
-<span class="sig-prename descclassname"><span class="pre">imcascade.results.</span></span><span class="sig-name descname"><span class="pre">vars_to_use</span></span><em class="property"> <span class="pre">=</span> <span class="pre">['img',</span> <span class="pre">'weight',</span> <span class="pre">'mask',</span> <span class="pre">'sig',</span> <span class="pre">'Ndof',</span> <span class="pre">'Ndof_sky',</span> <span class="pre">'Ndof_gauss',</span> <span class="pre">'has_psf',</span> <span class="pre">'psf_a',...</span></em><a class="headerlink" href="#imcascade.results.vars_to_use" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py class">
@@ -575,6 +556,20 @@ mag per arcsec^2.</p></li>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>float or Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="imcascade.results.ImcascadeResults.make_diagnostic_fig">
+<span class="sig-name descname"><span class="pre">make_diagnostic_fig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#imcascade.results.ImcascadeResults.make_diagnostic_fig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function which generates a diagnostic figure to assess fit</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>fig</strong> – matplotlib figure object</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>matplotlib figure</p>
 </dd>
 </dl>
 </dd></dl>

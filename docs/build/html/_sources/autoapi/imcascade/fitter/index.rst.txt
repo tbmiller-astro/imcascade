@@ -307,18 +307,35 @@ Attributes
       :rtype: Array
 
 
-   .. method:: save_results(self, file_name, run_basic_analysis=True, thin_posterior=1, zpt=None, cutoff=None, errp_lo=16, errp_hi=84)
+   .. method:: run_zeus(self, method='express', prior='min_results', nsteps_max=int(100000.0), burnin=500, thin=5)
+
+      Function to run zeus to sample the posterior distribution using either the
+      'full' methods which explores all paramters, or the 'express' method which sets
+      the structural parameters.
+
+      :param method: Which method to use to run dynesty
+      :type method: str: 'full' or 'express'
+      :param prior: Which of the two choices of priors to use. The `min_results` priors are Gaussian,
+                    with centers defined by the best fit paramters and variance equal to 4 times
+                    the variance estimated using the Hessian matrix from the run_ls_min() run.
+                    `uniform` is what it sounds like, uniform priors based on the the lower and upper bounds
+                    Defualt is `min_results`
+      :type prior: 'min_results' or 'uniform'
+
+      :returns: **Posterior** -- posterior distribution derrived. If method is 'express', the first 4 columns,
+                containg x0, y0, PA and q, are all the same and equal to values used to pre-render the images
+      :rtype: Array
+
+
+   .. method:: save_results(self, file_name)
 
       Function to save results after run_ls_min, run_dynesty and/or run_emcee is performed. Will be saved as an ASDF file.
 
       :param file_name: Str defining location of where to save data
       :type file_name: str
-      :param run_basic_analysis: If true will run ImcascadeResults.run_basic_analysis
-      :type run_basic_analysis: Bool (default True)
 
-      :returns: **Posterior** -- posterior distribution derrived. If method is 'express', the first 4 columns,
-                containg x0,y0,PA and q, are all the same and equal to values used to pre-rended the images
-      :rtype: Array
+      :returns: **dict_saved** -- Dictionary containing all the save quantities
+      :rtype: dict
 
 
 

@@ -3,6 +3,10 @@ from scipy.special import gamma
 import itertools
 from astropy.convolution import convolve, Gaussian2DKernel
 
+vars_to_use = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss',
+ 'has_psf', 'psf_a','psf_sig','psf_shape','log_weight_scale','min_param','sky_model',
+ 'posterior', 'post_method','log_file', 'logz','logz_err']
+
 def guess_weights(sig, re, flux):
     """ Method to guess the weights of gaussian componenets given an re and flux.
     Based on a polynomial fit to the exp fits of Hogg & Lang 2013

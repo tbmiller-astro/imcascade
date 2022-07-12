@@ -152,4 +152,12 @@ Classes
                 * **sig_fit** (*1-D array*) -- Best fit widths
 
 
+   .. method:: calc_fwhm(self)
+
+      Function to estimate the FHWM of the PSF, by interpolating the measured profile
+
+      :returns: **FWHM** -- Estimate of the FWHM in pixels
+      :rtype: float
+
+
 

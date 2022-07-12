@@ -39,4 +39,6 @@ Dependencies
 
 * ``asdf``
 
+Optionally, you can also install ``jax``, this speeds up the express sampling by a decent margin. It is left as optional as it cannot currently be installed easily on all systems. To install jax follow the instructions `here. <https://github.com/google/jax#installation>`_
+
 ``imcascade`` was developed and tested using Python 3, but it may also work in Python 2 if the required packages can be installed, but be careful that it has not been properly vetted.
