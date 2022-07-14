@@ -55,7 +55,9 @@ class ImcascadeResults():
         #To-do write better function to do this that can handle missing values
         for var_name in vars_to_use:
             if var_name in dict_obj.keys():
-                setattr(self, var_name, dict_obj[var_name] )
+                    setattr(self, var_name, dict_obj[var_name] )
+        if 'posterier'in dict_obj.keys():
+            setattr(self, 'posterior', dict_obj['posterier'] )
 
         if hasattr(self, 'posterior'):
             self.x0 = self.posterior[::int(thin_posterior),0]
@@ -512,7 +514,7 @@ class ImcascadeResults():
             if self.obj_type == 'file':
                 input_asdf = asdf.open(self.input)
                 input_asdf.tree.update(res_dict)
-                input_asdf.write_to(self.input)
+                input_asdf.write_to(save_file)
             else:
                 dict_to_save = vars(self).copy()
                 dict_to_save.pop('input')
@@ -675,7 +677,7 @@ class ImcascadeResults():
             param_no_sky[-3:] = 0
             best_fit_sky = fitter.get_sky_model(self.min_param[-3:])
         else:
-            best_fit_sky == np.zeros(shape= fitter.img.shape)
+            best_fit_sky = np.zeros(shape= fitter.img.shape)
         img = np.ma.masked_array(fitter.img, mask = fitter.mask)
         best_fit_mod = fitter.make_model(param_no_sky)
 
