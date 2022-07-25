@@ -1,11 +1,11 @@
 from asyncio.log import logger
 from cmath import log
 import importlib
-import numpy as np
 import asdf
 import logging
 from scipy.optimize import least_squares,minimize,Bounds
 from scipy.stats import norm, truncnorm,cauchy
+import numpy as np
 
 from imcascade.mgm import MultiGaussModel
 from imcascade.utils import dict_add, guess_weights,log_scale,expand_mask,vars_to_use
@@ -16,11 +16,14 @@ from astropy.io import fits
 import dynesty
 from dynesty import utils as dyfunc
 
+
+
 log2pi = np.log(2.*np.pi)
+
 
 def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re = None, flux = None,
  psf_oversamp = 1, sky_model = True, log_file = None, readnoise = None, gain = None, exp_time = None, num_components = None,
- log_weight_scale = True):
+ component_widths = None, log_weight_scale = True):
     """Function used to help Initialize Fitter instance from simple inputs
 
     Parameters
@@ -101,14 +104,7 @@ def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re 
         logger.info("Widths: "+ ','.join(map(str,np.round(psf_sig,2))) )
         logger.info("Fluxes: "+ ','.join(map(str,np.round(psf_a,2))))
 
-        psf_hwhm = pfitter.calc_fwhm()/2.
-
-        if psf_hwhm > 1:
-            sig_min = psf_hwhm*0.5
-        else:
-            sig_min = 0.5
-    else:
-        sig_min = 0.75
+    
     
     #Load image data
     if type(im) == str:
@@ -122,8 +118,8 @@ def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re 
 
     #Use sep to estimate object properties and rms depending
     import sep
-    bkg = sep.Background(im_data, bw = 16,bh = 16)
-    obj,seg = sep.extract(im_data, 2., err = bkg.globalrms, segmentation_map = True, deblend_cont=1e-4)
+    bkg = sep.Background(im_data, bw = 32,bh = 32)
+    obj,seg = sep.extract(im_data, 2.5, err = bkg.globalrms, segmentation_map = True, deblend_cont=1e-3)
     seg_obj = seg[int(x0), int(y0)]
 
     if re is None:
@@ -135,7 +131,8 @@ def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re 
         fl_guess = obj['flux'][seg_obj-1]
     else:
         fl_guess = None
-    sig_max = a_guess*9
+    sig_min = 0.75
+    sig_max = a_guess*8
 
     init_dict = {'re':a_guess, 'flux':fl_guess, 'sky0':bkg.globalback, 'x0':x0, 'y0':y0}
 
@@ -148,8 +145,12 @@ def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re 
             num_sig = 7
     else:
         num_sig = num_components
-    sig_use = log_scale(sig_min,sig_max, num_sig)
-    logger.info("Using %i components with logarithmically spaced widths to fit galaxy"%num_sig)
+
+    if component_widths is None:
+        sig_use = log_scale(sig_min,sig_max, num_sig)
+    else:
+        sig_use = component_widths.copy()
+    logger.info("Using %i components with logarithmically spaced widths to fit galaxy"%(len(sig_use) ) )
     logger.info(", ".join(map(str,np.round(sig_use,2))))
 
     #Use sep results to estimate mask
@@ -274,7 +275,7 @@ class Fitter(MultiGaussModel):
       sky_model = True,sky_type = 'tilted-plane', render_mode = 'hybrid', log_weight_scale = True, verbose = True,
       psf_shape = None,init_dict = {}, bounds_dict = {}, log_file = None):
         """Initialize a Task instance"""
-        self.img  = img
+        self.img  = np.asarray(img)
         self.verbose = verbose
         
         if log_file is None:
@@ -302,14 +303,14 @@ class Fitter(MultiGaussModel):
         else:
             if weight.shape != self.img.shape:
                 raise ValueError("'weight' array must have same shape as 'img'")
-            self.weight = weight
+            self.weight = np.asarray(weight)
 
 
         if mask is not None:
             if self.weight.shape != self.img.shape:
                 raise ValueError("'mask' array must have same shape as 'img' ")
             self.weight[np.where(mask == 1)] = 0
-            self.mask = mask
+            self.mask = np.asarray(mask)
         else:
             self.mask = np.zeros(self.img.shape)
 
@@ -659,7 +660,7 @@ class Fitter(MultiGaussModel):
             log likeliehood for a given set of paramters, defined as -0.5*chi^2
 """
         model = self.make_express_model(exp_params)
-        return -0.5*np.sum( (self.img - model)**2 *self.weight ) + self.loglike_const
+        return -0.5*( (self.img - model)**2 *self.weight ).sum() + self.loglike_const
 
     def ptform_exp_ls(self, u):
         """Prior transformation function to be used in dynesty 'express' mode using
@@ -753,14 +754,18 @@ class Fitter(MultiGaussModel):
                 log_like_use = self.log_like_exp
             else:
                 logger.info("jax module found, importing and 'jit'-ing likelihood function")
-                from jax import jit,grad
+                from jax import jit, numpy as jnp
+
+                #Convert to JAX array to allow jitting
+                self.img = jnp.array(self.img)
+                self.weight = jnp.array(self.weight)
                 log_like_use = jit(self.log_like_exp)
-                grad_log_like = grad(log_like_use)
-                sampler_kwargs.update({'gradient':grad_log_like, 'compute_jac':True})
+            
             ndim = self.Ndof_gauss + self.Ndof_sky
             if not hasattr(self, 'express_gauss_arr'):
                 if self.verbose: self.logger.info('Setting up pre-rendered images')
                 _ = self.set_up_express_run()
+            
             if prior == 'min_results':
                 sampler = dynesty.DynamicNestedSampler( log_like_use, self.ptform_exp_ls, ndim= ndim, **sampler_kwargs)
             elif prior == 'uniform':
@@ -772,6 +777,10 @@ class Fitter(MultiGaussModel):
                 raise ("Chosen prior must be either 'min_results', 'uniform' or 'cauchy'")
         
         sampler.run_nested(**run_nested_kwargs)
+
+        #Reset to Numpy if jax was used
+        self.img = np.array(self.img)
+        self.weight = np.array(self.weight)
 
         if self.verbose: self.logger.info('Finished running dynesty, calculating posterior')
         self.dynesty_sampler = sampler
