@@ -198,10 +198,10 @@ def min_diff_array(arr):
 def parse_input_dicts(bounds_dict,init_dict, fitter_class):
     init_dict = dict_add(init_dict, 're', 5.)
 
-    init_dict = dict_add(init_dict, 'x0',int(fitter_class.img.shape[0]/2) )
-    init_dict = dict_add(init_dict, 'y0',int(fitter_class.img.shape[1]/2) )
-    bounds_dict = dict_add(bounds_dict, 'x0',[init_dict['x0'] - 10,init_dict['x0'] + 10])
-    bounds_dict = dict_add(bounds_dict, 'y0',[init_dict['y0'] - 10,init_dict['y0'] + 10])
+    init_dict = dict_add(init_dict, 'xc',int(fitter_class.img.shape[0]/2) )
+    init_dict = dict_add(init_dict, 'yc',int(fitter_class.img.shape[1]/2) )
+    bounds_dict = dict_add(bounds_dict, 'xc',[init_dict['xc'] - 10,init_dict['xc'] + 10])
+    bounds_dict = dict_add(bounds_dict, 'yc',[init_dict['yc'] - 10,init_dict['yc'] + 10])
 
     if fitter_class.phi_profile:
         init_dict = dict_add(init_dict, 'phi', [np.pi/2.,np.pi/2.,np.pi/2., 1.5* init_dict['re'] ] )
@@ -279,12 +279,12 @@ def parse_input_dicts(bounds_dict,init_dict, fitter_class):
         bounds_dict = dict_add(bounds_dict,'a%i'%i,  [init_dict['a_min'], init_dict['a_max'] ])
 
     #Now set initial and boundry values once defaults or inputs have been used
-    lb = [bounds_dict['x0'][0], bounds_dict['y0'][0], ]
-    ub = [bounds_dict['x0'][1], bounds_dict['y0'][1], ]
+    lb = [bounds_dict['xc'][0], bounds_dict['yc'][0], ]
+    ub = [bounds_dict['xc'][1], bounds_dict['yc'][1], ]
 
     param_init = []
-    param_init.append(init_dict['x0'] )
-    param_init.append(init_dict['y0'])
+    param_init.append(init_dict['xc'] )
+    param_init.append(init_dict['yc'])
     
     if fitter_class.q_profile:
         [ param_init.append(x) for x in init_dict['q'] ]

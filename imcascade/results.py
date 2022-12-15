@@ -1,10 +1,13 @@
 import numpy as np
 import asdf
 from scipy.optimize import root_scalar
+from abc import ABC
 
 import imcascade
 from imcascade.utils import get_med_errors
 
+
+#TODO Re-code make_diagnostic_fig
 
 def calc_flux_input(weights,sig, cutoff = None):
     if cutoff == None:
@@ -16,8 +19,8 @@ def r_root_func(r,f_L, weights,sig,cutoff):
     return f_L - np.sum(weights*(1. - np.exp(-1.*r**2 / (2*sig**2)) ),axis = -1 ) / calc_flux_input(weights,sig,cutoff = cutoff)
 
 vars_to_use = ['img', 'weight', 'mask', 'sig', 'Ndof', 'Ndof_sky', 'Ndof_gauss',
- 'has_psf', 'psf_a','psf_sig','psf_shape','log_weight_scale','min_param','sky_model',
- 'posterior', 'post_method','log_file', 'logz','logz_err']
+ 'has_psf', 'psf_a','psf_sig','psf_shape','log_weight_scale','result_dict','sky_model',
+ 'posterior', 'post_method','log_file', 'logz','logz_err', ]
 
 class ImcascadeResults():
     """A class used for collating imcascade results and performing analysis
@@ -41,7 +44,7 @@ class ImcascadeResults():
     def __init__(self, Obj, thin_posterior = 1):
         """Initialize a Task instance
 """
-        if type(Obj) == imcascade.fitter.Fitter:
+        if isinstance(Obj,ABC):
             self.obj_type = 'class'
             dict_obj = vars(Obj)
         if type(Obj) == dict:
@@ -60,25 +63,19 @@ class ImcascadeResults():
                 setattr(self, var_name, dict_obj[var_name] )
 
         if hasattr(self, 'posterior'):
-            self.x0 = self.posterior[::int(thin_posterior),0]
-            self.y0 = self.posterior[::int(thin_posterior),1]
-            self.q = self.posterior[::int(thin_posterior),2]
-            self.pa = self.posterior[::int(thin_posterior),3]
-            self.weights = self.posterior[::int(thin_posterior),4:4+self.Ndof_gauss]
-
-            if self.sky_model: self.sky_params = self.posterior[::int(thin_posterior),4+self.Ndof_gauss:]
-
-        elif hasattr(self, 'min_param'):
-            self.x0 = self.min_param[0]
-            self.y0 = self.min_param[1]
-            self.q = self.min_param[2]
-            self.pa = self.min_param[3]
-            self.weights = self.min_param[4:4+self.Ndof_gauss]
-            if self.sky_model: self.sky_params = self.min_param[4+self.Ndof_gauss:]
-
-        #Account for if weights are in log_scale
-        if self.log_weight_scale:
-            self.weights = 10**self.weights
+            dict_to_use = self.posterior.copy()
+            self.xc = dict_to_use['xc'].data.T.squeeze()
+            self.yc =  dict_to_use['yc'].data.T.squeeze()
+            self.q =  dict_to_use['q'].data.T.squeeze()
+            self.phi =  dict_to_use['phi'].data.T.squeeze()
+            self.comp_fluxes = dict_to_use['comp_fluxes'].data.T.squeeze()
+        elif hasattr(self, 'result_dict'):
+            dict_to_use = self.result_dict.copy()
+            self.xc = np.array(dict_to_use['xc'])
+            self.yc =  np.array(dict_to_use['yc'])
+            self.q =  np.array(dict_to_use['q'])
+            self.phi =  np.array(dict_to_use['phi'])
+            self.comp_fluxes = np.array(dict_to_use['comp_fluxes'])
 
     def calc_flux(self, cutoff = None):
         """Calculate flux of given results
@@ -95,9 +92,9 @@ class ImcascadeResults():
             Total flux of best fit model
 """
         if cutoff == None:
-            flux_cur = np.sum(self.weights, axis = -1)
+            flux_cur = np.sum(self.comp_fluxes, axis = -1)
         else:
-            flux_cur = np.sum(self.weights*(1 - np.exp(-1*cutoff**2/ (2*self.sig**2) ) ), axis = -1 )
+            flux_cur = np.sum(self.comp_fluxes*(1 - np.exp(-1*cutoff**2/ (2*self.sig**2) ) ), axis = -1 )
         self.flux = flux_cur
         return flux_cur
 
@@ -125,10 +122,10 @@ class ImcascadeResults():
             frac_use = X
         f_cur = lambda w: root_scalar(r_root_func, bracket = [0,5*np.max(self.sig)], args = (frac_use,w,self.sig,cutoff) ).root
 
-        if self.weights.ndim == 1:
-            return f_cur(self.weights)
-        if self.weights.ndim == 2:
-            return np.array(list(map(f_cur, self.weights)) )
+        if self.comp_fluxes.ndim == 1:
+            return f_cur(self.comp_fluxes)
+        if self.comp_fluxes.ndim == 2:
+            return np.array(list(map(f_cur, self.comp_fluxes)) )
 
     def calc_rX(self,X,cutoff = None):
         """Function to calculate the radius containing X percent of the light
@@ -164,14 +161,14 @@ class ImcascadeResults():
 
         #Use 2nd degree polynomical interpolation to calculate target radius
         # When compared more accurate but slower root finding, accurate ~1e-4 %, more then good enough
-        if self.weights.ndim == 1:
+        if self.comp_fluxes.ndim == 1:
             if arg_min == 149: arg_min -= 1
 
             fl_0 = cog[arg_min -1]
             fl_1 = cog[arg_min]
             fl_2 = cog[arg_min + 1]
 
-        if self.weights.ndim == 2:
+        if self.comp_fluxes.ndim == 2:
             arg_min[arg_min == 149] = 148
             fl_0 = cog[arg_min -1,np.arange(cog.shape[1])]
             fl_1 = cog[arg_min,np.arange(cog.shape[1])]
@@ -290,7 +287,7 @@ class ImcascadeResults():
         else:
             q_use = np.copy(self.q)
 
-        prof_all = self.weights/(2*np.pi*q_use[:,np.newaxis]*self.sig**2) * np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*self.sig**2))
+        prof_all = self.comp_fluxes/(2*np.pi*q_use[:,np.newaxis]*self.sig**2) * np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*self.sig**2))
         prof_all = prof_all.squeeze()
 
         if return_ind:
@@ -334,13 +331,13 @@ class ImcascadeResults():
         final_q = np.sqrt( (self.sig[:,None]**2 * q_use*q_use+ self.psf_sig[:,None,None]**2) )
         final_q = np.moveaxis(final_q, -1,0)
         final_q = np.moveaxis(final_q, 2,1)
-        final_q = final_q.reshape(self.weights.shape[0], self.weights.shape[1]*len(self.psf_a), order = 'F') / np.sqrt(final_var)
+        final_q = final_q.reshape(self.comp_fluxes.shape[0], self.comp_fluxes.shape[1]*len(self.psf_a), order = 'F') / np.sqrt(final_var)
 
 
-        final_a = self.weights*self.psf_a[:,np.newaxis,np.newaxis]
+        final_a = self.comp_fluxes*self.psf_a[:,np.newaxis,np.newaxis]
         final_a = np.moveaxis(final_a,0,-1)
 
-        final_a = final_a.reshape(self.weights.shape[0], self.weights.shape[1]*len(self.psf_a), order = 'F')
+        final_a = final_a.reshape(self.comp_fluxes.shape[0], self.comp_fluxes.shape[1]*len(self.psf_a), order = 'F')
 
         prof_all = final_a/(2*np.pi*final_q*final_var) * np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*final_var))
         prof_all = prof_all.squeeze()
@@ -377,7 +374,7 @@ class ImcascadeResults():
         if type(r) == float:
             r = np.array([r,])
 
-        cog_all = self.weights*( 1. - np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*self.sig**2)) )
+        cog_all = self.comp_fluxes*( 1. - np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*self.sig**2)) )
         cog_all = cog_all.squeeze()
 
         if return_ind:
@@ -428,13 +425,13 @@ class ImcascadeResults():
         final_q = np.sqrt( (self.sig[:,None]**2 * q_use*q_use+ self.psf_sig[:,None,None]**2) )
         final_q = np.moveaxis(final_q, -1,0)
         final_q = np.moveaxis(final_q, 2,1)
-        final_q = final_q.reshape(self.weights.shape[0], self.weights.shape[1]*len(self.psf_a), order = 'F') / np.sqrt(final_var)
+        final_q = final_q.reshape(self.comp_fluxes.shape[0], self.comp_fluxes.shape[1]*len(self.psf_a), order = 'F') / np.sqrt(final_var)
 
 
-        final_a = self.weights*self.psf_a[:,np.newaxis,np.newaxis]
+        final_a = self.comp_fluxes*self.psf_a[:,np.newaxis,np.newaxis]
         final_a = np.moveaxis(final_a,0,-1)
 
-        final_a = final_a.reshape(self.weights.shape[0], self.weights.shape[1]*len(self.psf_a), order = 'F')
+        final_a = final_a.reshape(self.comp_fluxes.shape[0], self.comp_fluxes.shape[1]*len(self.psf_a), order = 'F')
 
         cog_all = final_a*(1 - np.exp(-r[:,np.newaxis,np.newaxis]**2/ (2*final_var) ) )
         cog_all = cog_all.squeeze()
@@ -484,7 +481,7 @@ class ImcascadeResults():
         self.calc_r90(cutoff = cutoff)
 
         res_dict = {}
-        if self.weights.ndim == 1:
+        if self.comp_fluxes.ndim == 1:
             res_dict['flux'] = self.flux
             if zpt != None: res_dict['mag'] = -2.5*np.log10(self.flux) + zpt
 
@@ -567,7 +564,7 @@ class ImcascadeResults():
 
         #Use 2nd degree polynomical interpolation to calculate target radius
         # When compared more accurate but slower root finding, accurate ~1e-4 %, more then good enough
-        if self.weights.ndim == 1:
+        if self.comp_fluxes.ndim == 1:
             if arg_min == 149: arg_min -= 1
             if arg_min ==0: arg_min += 1
 
@@ -575,7 +572,7 @@ class ImcascadeResults():
             I_1 = sbp[arg_min]
             I_2 = sbp[arg_min + 1]
 
-        if self.weights.ndim == 2:
+        if self.comp_fluxes.ndim == 2:
             arg_min[arg_min == 149] = 148
             arg_min[arg_min == 0] = 1
 
@@ -625,7 +622,7 @@ class ImcascadeResults():
 
 
         #Use 2nd degree polynomical interpolation to calculate target radius
-        if self_cls.weights.ndim == 1:
+        if self_cls.comp_fluxes.ndim == 1:
             if arg_min == 149: arg_min -= 1
             if arg_min ==0: arg_min += 1
 
@@ -633,7 +630,7 @@ class ImcascadeResults():
             I_1 = ratio[arg_min]
             I_2 = ratio[arg_min + 1]
 
-        if self_cls.weights.ndim == 2:
+        if self_cls.comp_fluxes.ndim == 2:
             arg_min[arg_min == 149] = 148
             arg_min[arg_min == 0] = 1
 
@@ -652,6 +649,7 @@ class ImcascadeResults():
 
         return r_target
 
+#? NEED to update this? How to calculate logZ?
 class MultiResults():
     ''' A Class to analyze and combine multiple ImcascadeResults classes using evidence weighting'''
     def __init__(self, lofr):
