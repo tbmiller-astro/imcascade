@@ -7,8 +7,8 @@ from scipy.stats import norm, truncnorm
 
 import dynesty
 from dynesty import utils as dyfunc
-from mgm import MultiGaussModel
-from imcascade.V1 import ImcascadeResults
+from .mgm import MultiGaussModel
+from imcascade.V1.results import ImcascadeResults
 from imcascade.utils import parse_input_dicts,reg_resid
 
 class Fitter(MultiGaussModel):
@@ -174,7 +174,7 @@ class Fitter(MultiGaussModel):
             the best fit model.
 """
         if self.verbose: self.logger.info('Running least squares minimization')
-        min_res = least_squares(self.resid_1d, self.param_init, bounds = self.bnds, **ls_kwargs)
+        min_res = least_squares(self.resid_1d, self.param_init, bounds = [self.bnds.lb,self.bnds.ub], **ls_kwargs)
         self.min_res = min_res
         self.min_param = min_res.x
         if self.verbose: self.logger.info('Finished least squares minimization')

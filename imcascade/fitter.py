@@ -76,7 +76,7 @@ def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re 
         x0 = im.shape[0]/2.
     if y0 is None:
         y0 = im.shape[0]/2.
-
+    self.a = b
     #Fit PSF
     if type(psf) == str:
         psf_data = fits.open(psf)
@@ -287,7 +287,7 @@ class Fitter(MGM):
         if not sky_type in ['tilted-plane', 'flat']:
             if verbose: self.logger.info("Incompatible sky_type, must choose 'tilted-plane' or 'flat'! Setting to 'tilted-plane'")
             sky_type = 'tilted-plane'
-
+        
         if psf_sig is None or psf_a is None:
             if verbose: self.logger.info('No PSF input, running in non-psf mode')
 
@@ -319,7 +319,6 @@ class Fitter(MGM):
         
         self.inv_mask = np.abs(self.mask-1).astype(bool)
 
-
         super().__init__(self.img.shape,sig, psf_sig, psf_a,
           verbose = verbose, sky_model = sky_model,sky_type = sky_type, log_weight_scale = log_weight_scale, psf_shape = psf_shape, q_profile=q_profile, phi_profile=phi_profile)
 
@@ -333,7 +332,6 @@ class Fitter(MGM):
         self.lb = lb
         self.ub = ub
         self.bnds = self.lb,self.ub
-    
     def validate_generators(self)-> bool:
         xc_yc_trace = trace(seed(self.generate_xc_yc, self.rkey)).get_trace()
         assert 'xc' in xc_yc_trace.keys()
@@ -501,9 +499,9 @@ def numpyro_model(fitter: Fitter):
 
     mod_final = mod_final + sky_im
 
-    with numpyro.handlers.scale(scale = 1./(fitter.shape[0]*fitter.shape[1])):
-        with numpyro.handlers.mask(mask=fitter.inv_mask):
-            numpyro.sample('obs', dist.Normal(mod_final, fitter.sig_img), obs =fitter.img )
+    #with numpyro.plate_stack("obs", (fitter.shape[0],fitter.shape[1])):
+    with numpyro.handlers.mask(mask=fitter.inv_mask):
+        numpyro.sample('obs', dist.Normal(mod_final, fitter.sig_img), obs =fitter.img )
 
 
 def get_priors_results(fitter: Fitter) -> ImcascadeResults:
