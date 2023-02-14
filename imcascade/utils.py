@@ -1,5 +1,6 @@
 import numpy as np
-from scipy.special import gamma
+import jax.numpy as jnp
+from scipy.special import gamma,comb
 import itertools
 from astropy.convolution import convolve, Gaussian2DKernel
 from astropy.stats.biweight import biweight_location as bwl
@@ -175,6 +176,38 @@ def sersic(r,n,re,Ltot):
     Ie = Ltot / (re*re* 2* np.pi*n * np.exp(b(n))* gamma(2*n) ) * b(n)**(2*n)
     return Ie*np.exp ( -b(n)*( (r/re)**(1./n) - 1. ) )
 
+
+def get_sersic_amps(sigmas, re, n, percision = 10):
+        # Calculation of MoG representation of Sersic Profiles based on lenstrometry implementation and Shajib (2019)
+        kes = np.arange(2 * percision + 1)
+        betas = np.sqrt(2 * percision * np.log(10) / 3. + 2. * 1j * np.pi * kes)
+        epsilons = np.zeros(2 * percision + 1)
+
+        epsilons[0] = 0.5
+        epsilons[1:percision + 1] = 1.
+        epsilons[-1] = 1 / 2. ** percision
+
+        for k in range(1, percision):
+            epsilons[2 * percision - k] = epsilons[2 * percision - k + 1] + 1 / 2. ** percision * comb(
+                percision, k)
+
+        etas = jnp.array( (-1.) ** kes * epsilons * 10. ** (percision / 3.) * 2. * np.sqrt(2*np.pi) )
+        betas = jnp.array(betas)
+
+
+        f_sigmas = jnp.sum(etas * sersic(jnp.outer(sigmas,betas), 1.,re,n).real,  axis=1)
+
+        del_log_sigma = jnp.abs(jnp.diff(jnp.log(sigmas)).mean())
+
+        amps = f_sigmas * del_log_sigma / jnp.sqrt(2*np.pi)
+
+        # weighting for trapezoid method integral
+        amps = amps.at[0].multiply(0.5)
+        amps = amps.at[-1].multiply(0.5)
+
+        amps = amps*2*np.pi*sigmas*sigmas
+        return amps
+
 def min_diff_array(arr):
     """ Function used to calculate the minimum difference between any  two elements
     in a given array_like
@@ -203,19 +236,12 @@ def parse_input_dicts(bounds_dict,init_dict, fitter_class):
     bounds_dict = dict_add(bounds_dict, 'xc',[init_dict['xc'] - 10,init_dict['xc'] + 10])
     bounds_dict = dict_add(bounds_dict, 'yc',[init_dict['yc'] - 10,init_dict['yc'] + 10])
 
-    if fitter_class.phi_profile:
-        init_dict = dict_add(init_dict, 'phi', [np.pi/2.,np.pi/2.,np.pi/2., 1.5* init_dict['re'] ] )
-        bounds_dict = dict_add(bounds_dict, 'phi', [[0,np.pi],[0,np.pi],[0,np.pi], [0.5*init_dict['re'], 2.5*init_dict['re'] ] ] )
-    else:
-        init_dict = dict_add(init_dict, 'phi', np.pi/2.)
-        bounds_dict = dict_add(bounds_dict, 'phi', [0,np.pi])
-    
-    if fitter_class.q_profile:
-        init_dict = dict_add(init_dict, 'q', [0.6,0.6,0.6,0.5*init_dict['re'],init_dict['re'] ] )
-        bounds_dict = dict_add(bounds_dict, 'q', [[0.2,1.],[0.2,1.],[0.2,1.],  [0, 1*init_dict['re'] ] ,  [1*init_dict['re'], 3*init_dict['re'] ] ] )
-    else:
-        init_dict = dict_add(init_dict,'q', 0.5)
-        bounds_dict = dict_add(bounds_dict, 'q', [0.2,1.])
+    init_dict = dict_add(init_dict, 'phi', np.pi/2.)
+    bounds_dict = dict_add(bounds_dict, 'phi', [0,np.pi])
+
+
+    init_dict = dict_add(init_dict,'q', 0.5)
+    bounds_dict = dict_add(bounds_dict, 'q', [0.2,1.])
 
     if fitter_class.sky_model:
         #Try to make educated guesses about sky model
@@ -257,25 +283,15 @@ def parse_input_dicts(bounds_dict,init_dict, fitter_class):
 
     a_guess = guess_weights(fitter_class.sig, init_dict['re'], init_dict['flux'])
 
-    #If using log scale then adjust initial guesses
-    if fitter_class.log_weight_scale:
-        #set minimum possible weight value
-        init_dict = dict_add(init_dict, 'a_max', np.log10(init_dict['flux']))
-        init_dict = dict_add(init_dict, 'a_min', init_dict['a_max'] - 5.)
-
-    else:
-        init_dict = dict_add(init_dict, 'a_max', init_dict['flux'])
-        init_dict = dict_add(init_dict, 'a_min', 0)
+    init_dict = dict_add(init_dict, 'a_max', init_dict['flux'])
+    init_dict = dict_add(init_dict, 'a_min', 0)
 
     for i in range(fitter_class.Ndof_gauss):
         a_guess_cur = a_guess[i]
         if a_guess_cur < init_dict['flux']/1e5:
             a_guess_cur = init_dict['flux']/1e4
 
-        if fitter_class.log_weight_scale:
-            init_dict = dict_add(init_dict,'a%i'%i, np.log10(a_guess_cur ) )
-        else:
-            init_dict = dict_add(init_dict,'a%i'%i, a_guess_cur )
+        init_dict = dict_add(init_dict,'a%i'%i, a_guess_cur )
         bounds_dict = dict_add(bounds_dict,'a%i'%i,  [init_dict['a_min'], init_dict['a_max'] ])
 
     #Now set initial and boundry values once defaults or inputs have been used
@@ -286,24 +302,16 @@ def parse_input_dicts(bounds_dict,init_dict, fitter_class):
     param_init.append(init_dict['xc'] )
     param_init.append(init_dict['yc'])
     
-    if fitter_class.q_profile:
-        [ param_init.append(x) for x in init_dict['q'] ]
-        [ lb.append(x[0]) for x in bounds_dict['q'] ]
-        [ ub.append(x[1]) for x in bounds_dict['q'] ]
-    else:
-        param_init.append(init_dict['q'])
-        lb.append(bounds_dict['q'][0])
-        ub.append(bounds_dict['q'][1])
+
+    param_init.append(init_dict['q'])
+    lb.append(bounds_dict['q'][0])
+    ub.append(bounds_dict['q'][1])
 
     
-    if fitter_class.phi_profile:
-        [ param_init.append(x) for x in init_dict['phi'] ]
-        [ lb.append(x[0]) for x in bounds_dict['phi'] ]
-        [ ub.append(x[1]) for x in bounds_dict['phi'] ]
-    else:
-        param_init.append( init_dict['phi'] )
-        lb.append(bounds_dict['phi'][0])
-        ub.append(bounds_dict['phi'][1])
+ 
+    param_init.append( init_dict['phi'] )
+    lb.append(bounds_dict['phi'][0])
+    ub.append(bounds_dict['phi'][1])
 
 
     for i in range(fitter_class.Ndof_gauss):

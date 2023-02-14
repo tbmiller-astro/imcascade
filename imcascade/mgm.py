@@ -2,11 +2,11 @@ from abc import ABC
 import numpy as np
 import jax.numpy as jnp
 from jax import jit
+from functools import partial
 
 class BaseMultiGaussModel(ABC):
     def __init__(self, shape, sig, psf_sig, psf_a, verbose = True, \
-      sky_model = True,sky_type = 'tilted-plane', log_weight_scale = True, \
-      psf_shape = None, q_profile = False, phi_profile = False):
+      sky_model = True,sky_type = 'tilted-plane'):
         """ Initialize a MultiGaussModel instance"""
         if psf_sig is not None or psf_a is not None:
             self.psf_sig = psf_sig
@@ -18,9 +18,7 @@ class BaseMultiGaussModel(ABC):
         else:
             self.has_psf = False
 
-        self.psf_shape = psf_shape
         self.shape = shape
-        self.log_weight_scale = log_weight_scale
 
         self.x_mid = shape[0]/2.
         self.y_mid = shape[1]/2.
@@ -53,19 +51,10 @@ class BaseMultiGaussModel(ABC):
         #TODO Deprecate below
         self.Ndof_gauss = len(self.sig)
 
-        self.q_profile = q_profile
-        self.phi_profile = phi_profile
 
-        if q_profile == False:
-            self.Ndof_q = 1
-        else:
-            self.Ndof_q = 5
+        self.Ndof_q = 1
+        self.Ndof_phi = 1
 
-        
-        if phi_profile == False:
-            self.Ndof_phi = 1
-        else:
-            self.Ndof_phi = 5
         
         self.Ndof_struct = 2 + self.Ndof_q + self.Ndof_phi
 
@@ -130,11 +119,10 @@ class MGM(BaseMultiGaussModel):
 """
 
     def __init__(self, shape, sig, psf_sig, psf_a, verbose = True, \
-      sky_model = True,sky_type = 'tilted-plane', log_weight_scale = True, \
-      psf_shape = None,q_profile = False, phi_profile = False):
+      sky_model = True,sky_type = 'tilted-plane'):
 
         """ Initialize a MultiGaussModel instance"""
-        super().__init__(shape, sig, psf_sig, psf_a, verbose, sky_model,sky_type,log_weight_scale, psf_shape, q_profile,phi_profile)
+        super().__init__(shape, sig, psf_sig, psf_a, verbose, sky_model,sky_type)
         self.X = jnp.array(self.X)
         self.Y = jnp.array(self.Y)
 
@@ -173,3 +161,4 @@ def render_gauss_model(X,Y, x_mid,y_mid, var,a, phi,q):
     const = a/ (2*jnp.pi*var*q)
     mod_3d = const* jnp.exp(-r_sq/(2*var) )
     return mod_3d.sum(axis = -1)
+

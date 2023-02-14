@@ -2,19 +2,22 @@ import numpy as np
 import logging
 from .mgm import MGM, render_gauss_model
 from imcascade.results import ImcascadeResults,vars_to_use
-from imcascade.utils import dict_add, log_scale,expand_mask,reg_resid,parse_input_dicts
+from imcascade.utils import dict_add, log_scale,expand_mask,reg_resid,parse_input_dicts, get_sersic_amps
 from astropy.io import fits
 import asdf
 import arviz as az 
+import optax
 
-from typing import Optional,Union
+from typing import Optional,Union, Callable
 import jax.numpy as jnp
 from jax.random import PRNGKey
+from jax import jit
 import numpyro
-from numpyro.handlers import seed, trace
+from numpyro.handlers import seed, trace, reparam
 import numpyro.distributions as dist
 from numpyro import infer
 from numpyro.optim import Adam
+from numpyro.infer.reparam import TransformReparam, LocScaleReparam
 
 def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re = None, flux = None, psf_oversamp = 1, sky_model = True, log_file = None, readnoise = None, gain = None, exp_time = None):
     """Function used to help Initialize Fitter instance from simple inputs
@@ -76,7 +79,6 @@ def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re 
         x0 = im.shape[0]/2.
     if y0 is None:
         y0 = im.shape[0]/2.
-    self.a = b
     #Fit PSF
     if type(psf) == str:
         psf_data = fits.open(psf)
@@ -212,8 +214,6 @@ def fitter_from_ASDF(file_name, init_dict= {}, bounds_dict = {}):
     inst = Fitter(img,sig,psf_sig,psf_a,init_dict = init_dict, bounds_dict = bounds_dict, **kwargs)
     return inst
 
-#TODO Write priors and test different variants
-
 class Fitter(MGM):
     """A Class used fit images with MultiGaussModel
 
@@ -270,7 +270,7 @@ class Fitter(MGM):
         is desigined to make 'intelligent' guesses if none are provided
 """
     def __init__(self, img, sig, psf_sig, psf_a, weight = None, mask = None,\
-      sky_model = True,sky_type = 'tilted-plane', log_weight_scale = True, q_profile = False,phi_profile = False, verbose = True, psf_shape = None,init_dict = {}, bounds_dict = {}, log_file = None):
+      sky_model = True,sky_type = 'tilted-plane', verbose = True, init_dict = {}, bounds_dict = {}, log_file = None):
         """Initialize a Task instance"""
         self.img  = img
         self.verbose = verbose
@@ -320,7 +320,7 @@ class Fitter(MGM):
         self.inv_mask = np.abs(self.mask-1).astype(bool)
 
         super().__init__(self.img.shape,sig, psf_sig, psf_a,
-          verbose = verbose, sky_model = sky_model,sky_type = sky_type, log_weight_scale = log_weight_scale, psf_shape = psf_shape, q_profile=q_profile, phi_profile=phi_profile)
+          verbose = verbose, sky_model = sky_model,sky_type = sky_type)
 
         self.npix = self.img.shape[0]*self.img.shape[1] - np.sum(self.mask)
 
@@ -332,13 +332,14 @@ class Fitter(MGM):
         self.lb = lb
         self.ub = ub
         self.bnds = self.lb,self.ub
+        
     def validate_generators(self)-> bool:
         xc_yc_trace = trace(seed(self.generate_xc_yc, self.rkey)).get_trace()
         assert 'xc' in xc_yc_trace.keys()
         assert 'yc' in xc_yc_trace.keys()
         
         phi_trace = trace(seed(self.generate_phi, self.rkey)).get_trace()   
-        assert 'phi' in phi_trace.keys()
+        assert ('phi' in phi_trace.keys() or 'phi_unwrapped' in phi_trace.keys() )
 
         q_trace = trace(seed(self.generate_q, self.rkey)).get_trace()   
         assert 'q' in q_trace.keys()
@@ -350,6 +351,58 @@ class Fitter(MGM):
 
         return True
 
+
+    def build_model(self,) -> Callable:
+
+        @jit
+        def render_full_model(x_mid,y_mid, var,a, phi,q):
+            mod_no_sub = render_gauss_model(self.X[:,:,None], 
+                self.Y[:,:,None], 
+                x_mid,
+                y_mid, 
+                var[self.w_no_sub], 
+                a[self.w_no_sub], 
+                phi[self.w_no_sub],
+                q[self.w_no_sub] )
+            
+            mod_sub = render_gauss_model(self.X_sub[:,:,:,:,None], 
+                self.Y_sub[:,:,:,:,None], 
+                x_mid,
+                y_mid, 
+                var[self.w_sub], 
+                a[self.w_sub], 
+                phi[self.w_sub],
+                q[self.w_sub] ).mean(axis = (2,3))
+
+            model_image = mod_no_sub.at[self.sub_cen[0] - self.sub_render_size : self.sub_cen[0] + self.sub_render_size, self.sub_cen[1] - self.sub_render_size: self.sub_cen[1] + self.sub_render_size].add(mod_sub)
+
+            return model_image
+        
+        def model():
+            xc,yc = self.generate_xc_yc()
+            phi = self.generate_phi()
+            q = self.generate_q()
+            comp_fluxes = self.generate_comp_fluxes()
+            
+            if self.has_psf:
+                var_render = (self.var + self.psf_var[:,None]).flatten()
+                q_render = jnp.sqrt( (self.var*q**2 + self.psf_var[:,None]).flatten()/var_render ) 
+                flux_render = (comp_fluxes*self.psf_a[:,None]).flatten()
+            else:
+                var_render = self.var
+                q_render = q
+                flux_render = comp_fluxes
+            
+            model_image = render_full_model(xc,yc,var_render,flux_render,phi,q_render) 
+            sky_image = self.generate_sky()
+
+            final_image =  model_image + sky_image
+
+            with numpyro.handlers.mask(mask=self.inv_mask):
+                numpyro.sample('obs', dist.Normal(final_image, self.sig_img), obs =self.img )
+
+        return model
+    
     def sample(self, sampler: Optional[infer.MCMC] = infer.NUTS,
         sampler_kwargs: Optional[dict] = {},
         mcmc_kwargs: Optional[dict] = {'num_warmup':500, 'num_samples':500, 'num_chains':1},
@@ -357,16 +410,17 @@ class Fitter(MGM):
         ) -> az.InferenceData:
         assert self.validate_generators()
 
+        model_use = self.build_model()
         if neutra_reparam:
+            assert hasattr(self, 'guide') and hasattr(self,'svi_result')
             neutra = infer.reparam.NeuTraReparam(self.guide, self.svi_result.params)
-            model_use = neutra.reparam(numpyro_model)
-        else:
-            model_use = numpyro_model
+            model_use = neutra.reparam(model_use)
+
         
         mcmc_sampler = sampler(model_use, **sampler_kwargs)
         mcmc_kernel = infer.MCMC(mcmc_sampler,**mcmc_kwargs)
 
-        mcmc_kernel.run(self.rkey, fitter = self)
+        mcmc_kernel.run(self.rkey)
 
         self.arvizID = az.from_numpyro(mcmc_kernel)
         self.posterior = az.extract(self.arvizID)
@@ -381,12 +435,14 @@ class Fitter(MGM):
     )-> Union[dict, az.InferenceData]:
         assert self.validate_generators()
         
-        optimizer = Adam(**optimizer_kwargs)
-        guide = guide_model(numpyro_model, **guide_kwargs)
-        svi_kernel = infer.SVI(numpyro_model, guide, optimizer, loss = infer.Trace_ELBO())
-        run_kwargs['fitter'] = self
-        self.svi_result = svi_kernel.run(self.rkey,**run_kwargs)
+        model_use = self.build_model()
+        optimizer = numpyro.optim.Adam(**optimizer_kwargs)
+        guide = guide_model(model_use, **guide_kwargs)
+        svi_kernel = infer.SVI(model_use, guide, optimizer, loss = infer.Trace_ELBO(num_particles=3))
+        
+        self.svi_result = svi_kernel.run(self.rkey, **run_kwargs)
         self.guide = guide
+        
         if use_posterior:
             #Sample guide posterior
             post_raw = guide.sample_posterior(self.rkey, self.svi_result.params, sample_shape = ((1000,)))
@@ -402,24 +458,27 @@ class Fitter(MGM):
             for key in median_dict:
                 if 'raw' in median_dict:
                     median_dict.pop(key)
-            pred = infer.Predictive(numpyro_model, guide = self.guide,num_samples=1)
-            pred_dict = pred(self.rkey, self)
+            pred = infer.Predictive(model_use, guide = self.guide,num_samples=1)
+            pred_dict = pred(self.rkey)
             for k in pred_dict.keys():
                 pred_dict[k] = pred_dict[k].squeeze()
             median_dict.update(pred_dict)
             self.result_dict = median_dict.copy()
+
             return self.result_dict
 
     def generate_xc_yc(self):
-        xc_raw = numpyro.sample('xc_raw', dist.Normal())
-        xc = numpyro.deterministic('xc', xc_raw*2 + self.init_dict['xc'])
+        xc_raw = numpyro.sample('xc_base', dist.Normal())
+        xc = numpyro.deterministic('xc', xc_raw + self.init_dict['xc'])
         
-        yc_raw = numpyro.sample('yc_raw', dist.Normal())
-        yc = numpyro.deterministic('yc', yc_raw*2 + self.init_dict['yc'])
+        yc_raw = numpyro.sample('yc_base', dist.Normal())
+        yc = numpyro.deterministic('yc', yc_raw + self.init_dict['yc'])
         return xc,yc
     
     def generate_phi(self):
-        phi = numpyro.sample('phi', dist.Uniform(0,jnp.pi/2.))
+
+        phi = numpyro.sample('phi', dist.Uniform(low = 0., high = jnp.pi/2.))
+        
         return phi*jnp.ones(self.N_gauss)
 
     def generate_q(self):
@@ -459,55 +518,73 @@ class Fitter(MGM):
 
             return sky_back + (self.X- self.x_mid)*sky_xsl + (self.Y- self.y_mid)*sky_ysl
 
-def numpyro_model(fitter: Fitter):
-    xc,yc = fitter.generate_xc_yc()
-    phi = fitter.generate_phi()
-    q = fitter.generate_q()
-    comp_fluxes = fitter.generate_comp_fluxes()
-
-    
-    if fitter.has_psf:
-        var_render = (fitter.var + fitter.psf_var[:,None]).flatten()
-        q_render = jnp.sqrt( (fitter.var*q**2 + fitter.psf_var[:,None]).flatten()/var_render ) 
-        flux_render = (comp_fluxes*fitter.psf_a[:,None]).flatten()
-    else:
-        var_render = fitter.var
-        q_render = q
-        flux_render = comp_fluxes
-    
-    model_image_no_os = render_gauss_model(fitter.X[:,:,None], 
-        fitter.Y[:,:,None], 
-        xc,
-        yc, 
-        var_render[fitter.w_no_sub], 
-        flux_render[fitter.w_no_sub], 
-        phi[fitter.w_no_sub],
-        q_render[fitter.w_no_sub] )
-
-    model_image_os = render_gauss_model(fitter.X_sub[:,:,:,:,None], 
-        fitter.Y_sub[:,:,:,:,None], 
-        xc,
-        yc, 
-        var_render[fitter.w_sub], 
-        flux_render[fitter.w_sub], 
-        phi[fitter.w_sub],
-        q_render[fitter.w_sub] ).mean(axis = (2,3))
-
-    mod_final = model_image_no_os.at[fitter.sub_cen[0] - fitter.sub_render_size : fitter.sub_cen[0] + fitter.sub_render_size, fitter.sub_cen[1] - fitter.sub_render_size: fitter.sub_cen[1] + fitter.sub_render_size].add(model_image_os)
-
-    sky_im = fitter.generate_sky()
-
-    mod_final = mod_final + sky_im
-
-    #with numpyro.plate_stack("obs", (fitter.shape[0],fitter.shape[1])):
-    with numpyro.handlers.mask(mask=fitter.inv_mask):
-        numpyro.sample('obs', dist.Normal(mod_final, fitter.sig_img), obs =fitter.img )
-
-
 def get_priors_results(fitter: Fitter) -> ImcascadeResults:
-    pred = infer.Predictive(numpyro_model, num_samples= 1000, batch_ndims=2)
-    prior_pred = pred(fitter.rkey, fitter)
+    model_use = fitter.build_model()
+    pred = infer.Predictive(model_use, num_samples= 1000, batch_ndims=2)
+    prior_pred = pred(fitter.rkey)
     var_dict = vars(fitter)
     prior_arviz = az.from_dict(prior_pred)
     var_dict['posterior'] = az.extract(prior_arviz)
     return ImcascadeResults(var_dict)
+
+import copy
+
+def add_sersic_flux_priors(fitter: Fitter, re: float, n: float):
+    fitter = copy.deepcopy(fitter)
+    med_prior_frac = get_sersic_amps(fitter.sig, re, n)
+    med_prior_frac = fitter.init_dict['flux']*med_prior_frac/np.sum(med_prior_frac)
+    sig_prior_frac = 0.05*fitter.init_dict['flux']
+        
+    def generate_comp_fluxes():
+        reparam_config = {"comp_fluxes": TransformReparam()}
+        with numpyro.handlers.reparam(config = reparam_config):
+            comp_fluxes = numpyro.sample('comp_fluxes',
+                dist.TransformedDistribution(
+                    dist.Normal(loc = 0, scale = jnp.ones(fitter.N_gauss)),
+                    dist.transforms.AffineTransform(med_prior_frac,sig_prior_frac)
+                ),
+            )
+        return comp_fluxes
+    
+    fitter.__setattr__('generate_comp_fluxes', generate_comp_fluxes)
+    assert fitter.validate_generators()
+    return fitter
+
+def add_q_prof_lin_interp(fitter: Fitter,r_low: float, r_high: float):
+    fitter = copy.deepcopy(fitter)
+
+    def generate_q_lin_interp():
+        q_med = numpyro.sample('q_med', dist.Uniform(0.1,1.))
+        tau_q = 0.1#numpyro.sample('tau_q', dist.HalfCauchy(scale=0.25))
+        with numpyro.plate('q_plate', 3):
+            lambda_q = numpyro.sample('lambda_q', dist.HalfCauchy(scale=1))
+            horseshoe_sigma = tau_q*lambda_q**2
+            q_nodes = numpyro.sample('q_nodes', dist.TruncatedNormal(loc=q_med, scale=horseshoe_sigma, low = 0.1, high = 1))
+        
+        r_mid = numpyro.sample('r_q_node_mid', dist.TruncatedNormal(loc=10, scale=3, low = 3, high = 20) )
+
+        r_nodes = jnp.array([r_low,r_mid, r_high])
+        q = numpyro.deterministic('q', jnp.interp(fitter.sig, r_nodes, q_nodes))
+        return q
+
+    fitter.__setattr__('generate_q', generate_q_lin_interp)
+    assert fitter.validate_generators()
+    return fitter
+
+def add_q_all_free(fitter: Fitter):
+    fitter = copy.deepcopy(fitter)
+
+    def generate_q_all():
+        q_med = numpyro.sample('q_med', dist.Uniform(0.1,1.))
+        tau_q = 0.1#numpyro.sample('tau_q', dist.HalfCauchy(scale=0.1))
+        with numpyro.plate('q_plate', fitter.N_gauss):
+            lambda_q = numpyro.sample('lambda_q', dist.HalfCauchy(scale=1.))
+            horseshoe_sigma = tau_q *lambda_q**2
+            q = numpyro.sample('q', dist.TruncatedNormal(loc=q_med, scale=horseshoe_sigma, low = 0.1, high = 1))
+
+        return q
+
+    fitter = copy.deepcopy(fitter)
+    fitter.__setattr__('generate_q', generate_q_all)
+    assert fitter.validate_generators()
+    return fitter
