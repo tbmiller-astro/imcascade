@@ -150,6 +150,8 @@ class MGM(BaseMultiGaussModel):
         self.w_sub = jnp.where( jnp.sqrt(var) <= self.sub_render_cut )
         self.w_no_sub = jnp.where( jnp.sqrt(var) > self.sub_render_cut )
 
+
+# TODO Improve implementation of this?
 @jit
 def render_gauss_model(X,Y, x_mid,y_mid, var,a, phi,q):
     X_mmid = (X - x_mid)
