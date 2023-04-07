@@ -1,4 +1,4 @@
-import setuptools
+from setuptools import setup, Extension, find_packages
 
 with open('requirements.txt') as infd:
     INSTALL_REQUIRES = [x.strip('\n') for x in infd.readlines()]
@@ -8,17 +8,16 @@ def readme():
     with open('README.rst') as f:
         return f.read()
 
-setuptools.setup(
+setup(
     name="imcascade",
     version="1.1",
     author="Tim Miller",
     author_email="tim.miller@yale.edu",
     description="imcascade: Fitting astronomical images using a 'cascade' of Gaussians",
-    long_description=readme(),
     long_description_content_type="text/x-rst",
+    long_description=readme(),
     url="https://github.com/tbmiller-astro/imcascade",
-    entry_points = {},
-    packages=setuptools.find_packages(),
+    packages=find_packages(),
     install_requires=INSTALL_REQUIRES,
     classifiers=[
         "Development Status :: 4 - Beta",

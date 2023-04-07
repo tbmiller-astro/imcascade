@@ -6,15 +6,15 @@ imcascade
 |Arxiv|
 |pypi|
 
-``imcascade`` is a code designed for fitting objects in astronomical images using a "cascade" of Gaussians. It uses multi-guassian expansion (MGE) to model galaxies as a mixture of Gaussians in a Bayesian Framework. It was designed to study the morphology of faint, semi-resolved galaxies. If you are planning on using ``imcascade`` we suggest reading our paper describing the method `here <https://arxiv.org/abs/2109.13262>`_  and the documentation `here <https://imcascade.readthedocs.io>`_.
+``imcascade`` is a code designed for fitting objects in astronomical images using a "cascade" of Gaussians. It uses multi-guassian expansion (MGE) to model galaxies as a mixture of Gaussians in a Bayesian Framework. It was designed to study the morphology of faint, semi-resolved galaxies. If you are planning on using ``imcascade`` we suggest reading our paper describing the method `here <https://arxiv.org/abs/2109.13262>`__  and the documentation `here <https://imcascade.readthedocs.io>`__.
 
 Citation
 --------
-``imcascade`` is open source software made available under the MIT license, written by Tim Miller and Pieter van Dokkum. If you use this package in your work please cite `Miller & van Dokkum (2021) <https://arxiv.org/abs/2109.13262>`_
+``imcascade`` is open source software made available under the MIT license, written by Tim Miller and Pieter van Dokkum. If you use this package in your work please cite `Miller & van Dokkum (2021) <https://arxiv.org/abs/2109.13262>`__
 
 Help and Issues
 ---------------
-``imcacscade`` is maintained on Github. If you find a bug in the code or have a feature you would like to request, please open an `issue on Github <https://github.com/tbmiller-astro/imcascade/issues>`_. Additionally you can reach out to me directly if you are having issues using the code or have suggestions.
+``imcacscade`` is maintained on Github. If you find a bug in the code or have a feature you would like to request, please open an `issue on Github <https://github.com/tbmiller-astro/imcascade/issues>`__. Additionally you can reach out to me directly if you are having issues using the code or have suggestions.
 
 .. |Docs| image:: https://readthedocs.org/projects/imcascade/badge/?version=latest
    :target: http://imcascade.readthedocs.io/?badge=latest
