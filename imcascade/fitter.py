@@ -19,7 +19,16 @@ from numpyro import infer
 from numpyro.optim import Adam
 from numpyro.infer.reparam import TransformReparam, LocScaleReparam
 
-def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re = None, flux = None, psf_oversamp = 1, sky_model = True, log_file = None, readnoise = None, gain = None, exp_time = None):
+
+import dynesty
+from dynesty import utils as dyfunc
+
+log2pi = np.log(2.*np.pi)
+
+
+def initialize_fitter(im, psf, mask = None, err = None, x0 = None,y0 = None, re = None, flux = None,
+ psf_oversamp = 1, sky_model = True, log_file = None, readnoise = None, gain = None, exp_time = None, num_components = None,
+ component_widths = None, log_weight_scale = True):
     """Function used to help Initialize Fitter instance from simple inputs
 
     Parameters
