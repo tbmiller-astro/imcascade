@@ -126,7 +126,6 @@ radii: 1D array
             the given y_data
 """
         prof = self.multi_gauss_1d(x_data, *params, mu = mu)
-        prof[prof<= 1e-5] = 1e-5
         return np.log10(prof) - np.log10(y_data)
 
     def fit_N(self, N,frac_cutoff = 1e-4, plot = False):
